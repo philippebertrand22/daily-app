@@ -1,0 +1,135 @@
+/* LeaderboardStyles.css */
+.leaderboard-container {
+    min-height: 100vh;
+    background: linear-gradient(180deg, #ebf5ff 0%, #e6e9ff 100%);
+    padding: 3rem 1rem;
+  }
+  
+  .leaderboard-title {
+    font-size: 2.5rem;
+    font-weight: bold;
+    color: #4338ca;
+    text-align: center;
+    margin-bottom: 2rem;
+  }
+  
+  .leaderboard-card {
+    max-width: 800px;
+    margin: 0 auto;
+    background: white;
+    border-radius: 0.75rem;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 10px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  
+  .leaderboard-header {
+    background: linear-gradient(90deg, #4f46e5 0%, #7e22ce 100%);
+    padding: 1.5rem;
+  }
+  
+  .header-title {
+    color: white;
+    font-size: 1.5rem;
+    font-weight: bold;
+  }
+  
+  .leaderboard-content {
+    padding: 1.5rem;
+  }
+  
+  .leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  .leaderboard-table th {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    font-weight: 600;
+    color: #4b5563;
+    border-bottom: 2px solid #e5e7eb;
+  }
+  
+  .leaderboard-table th.text-right {
+    text-align: right;
+  }
+  
+  .leaderboard-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .highlighted-row {
+    background-color: #eef2ff;
+  }
+  
+  .player-cell {
+    display: flex;
+    align-items: center;
+  }
+  
+  .avatar {
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    margin-right: 0.75rem;
+  }
+  
+  .blue-avatar { background-color: #3b82f6; }
+  .purple-avatar { background-color: #8b5cf6; }
+  .pink-avatar { background-color: #ec4899; }
+  .yellow-avatar { background-color: #eab308; }
+  .green-avatar { background-color: #22c55e; }
+  .indigo-avatar { background-color: #6366f1; }
+  
+  .player-name {
+    font-weight: 500;
+  }
+  
+  .you-tag {
+    margin-left: 0.5rem;
+    font-size: 0.75rem;
+    background-color: #dbeafe;
+    color: #3b82f6;
+    padding: 0.25rem 0.5rem;
+    border-radius: 9999px;
+  }
+  
+  .crown-icon {
+    color: #eab308;
+    margin-right: 0.25rem;
+  }
+  
+  .points-cell {
+    font-weight: bold;
+    text-align: right;
+  }
+  
+  .guesses-cell {
+    text-align: right;
+  }
+  
+  .back-container {
+    margin-top: 2rem;
+    text-align: center;
+  }
+  
+  .back-button {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    background-color: #4f46e5;
+    color: white;
+    border-radius: 0.5rem;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background-color 0.3s;
+  }
+  
+  .back-button:hover {
+    background-color: #4338ca;
+  }
