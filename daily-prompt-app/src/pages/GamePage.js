@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import AnswerPrompt from '../components/Game/AnswerPrompt';
 import GuessAnswers from '../components/Game/GuessAnswers';
 import Results from '../components/Game/Results';
+import './GamePageStyles.css'; // Import the new CSS file
 
 const GamePage = () => {
   const { gameId } = useParams();
@@ -137,9 +138,9 @@ const GamePage = () => {
   // Loading state
   if (gameState === 'loading') {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-md">
-        <h1 className="text-3xl font-bold mb-6 text-center">Daily Prompt</h1>
-        <div className="bg-white p-6 rounded-lg shadow-md text-center">
+      <div className="container">
+        <h1 className="page-title">Daily Prompt</h1>
+        <div className="loading-container">
           <p>Loading game...</p>
         </div>
       </div>
@@ -149,14 +150,14 @@ const GamePage = () => {
   // Error state
   if (error) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-md">
-        <h1 className="text-3xl font-bold mb-6 text-center">Daily Prompt</h1>
-        <div className="bg-red-100 text-red-700 p-6 rounded-lg shadow-md">
-          <p className="font-bold">Error:</p>
+      <div className="container">
+        <h1 className="page-title">Daily Prompt</h1>
+        <div className="error-container">
+          <p className="error-title">Error:</p>
           <p>{error}</p>
           <button 
             onClick={() => navigate('/')}
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
+            className="home-button"
           >
             Return Home
           </button>
@@ -166,8 +167,8 @@ const GamePage = () => {
   }
   
   return (
-    <div className="container mx-auto px-4 py-8 max-w-md">
-      <h1 className="text-3xl font-bold mb-6 text-center">Daily Prompt</h1>
+    <div className="container">
+      <h1 className="page-title">Daily Prompt</h1>
       
       {gameState === 'answer' && (
         <AnswerPrompt 

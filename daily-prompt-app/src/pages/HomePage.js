@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import './HomePageStyles.css'; // Import our custom CSS
+import './HomePageStyles.css'; // Updated import to match your CSS filename
 
 const HomePage = () => {
   const [savedAnswers, setSavedAnswers] = useState([]);
@@ -17,45 +17,45 @@ const HomePage = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-indigo-100 py-12 px-4">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold text-indigo-800 mb-2">Daily Prompt</h1>
-          <p className="text-gray-600">Connect with friends through daily challenges</p>
+    <div className="home-container">
+      <div className="home-content">
+        <div className="app-title-container">
+          <h1 className="app-title">Daily Prompt</h1>
+          <p className="app-subtitle">Connect with friends through daily challenges</p>
         </div>
         
-        <div className="grid md:grid-cols-2 gap-8">
-          <div className="bg-white rounded-xl shadow-lg overflow-hidden transform transition duration-300 hover:shadow-xl">
-            <div className="bg-indigo-600 px-6 py-4">
-              <h2 className="text-xl font-bold text-white">Game Modes</h2>
+        <div className="home-grid">
+          <div className="card">
+            <div className="card-header">
+              <h2 className="card-title">Game Modes</h2>
             </div>
-            <div className="p-6">
-              <p className="text-gray-600 mb-6">
+            <div className="card-content">
+              <p className="card-description">
                 Experience different phases of the game:
               </p>
               
-              <div className="space-y-3">
+              <div className="button-group">
                 <Link 
                   to="/game/answer" 
-                  className="block p-4 bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg text-center font-medium shadow-md hover:from-blue-600 hover:to-blue-700 transition duration-300"
+                  className="action-button blue-button"
                 >
                   Answer Today's Prompt
                 </Link>
                 <Link 
                   to="/game/guess" 
-                  className="block p-4 bg-gradient-to-r from-purple-500 to-purple-600 text-white rounded-lg text-center font-medium shadow-md hover:from-purple-600 hover:to-purple-700 transition duration-300"
+                  className="action-button purple-button"
                 >
                   Guess Who Said What
                 </Link>
                 <Link 
                   to="/game/results" 
-                  className="block p-4 bg-gradient-to-r from-green-500 to-green-600 text-white rounded-lg text-center font-medium shadow-md hover:from-green-600 hover:to-green-700 transition duration-300"
+                  className="action-button green-button"
                 >
                   View Results
                 </Link>
                 <Link 
                   to="/leaderboard" 
-                  className="block p-4 bg-gradient-to-r from-yellow-500 to-yellow-600 text-white rounded-lg text-center font-medium shadow-md hover:from-yellow-600 hover:to-yellow-700 transition duration-300"
+                  className="action-button yellow-button"
                 >
                   Leaderboard
                 </Link>
@@ -64,37 +64,37 @@ const HomePage = () => {
           </div>
           
           {savedAnswers.length > 0 ? (
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="bg-indigo-600 px-6 py-4">
-                <h2 className="text-xl font-bold text-white">Your Answers</h2>
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title">Your Answers</h2>
               </div>
-              <div className="p-6">
-                <div className="space-y-4">
+              <div className="card-content">
+                <div className="answers-list">
                   {savedAnswers.map((item, index) => (
-                    <div key={index} className="bg-gray-50 p-4 rounded-lg">
-                      <div className="flex justify-between items-start mb-2">
-                        <span className="font-medium text-indigo-700">Game: {item.gameId}</span>
-                        <span className="text-xs text-gray-500">{item.timestamp}</span>
+                    <div key={index} className="answer-item">
+                      <div className="answer-header">
+                        <span className="game-id">Game: {item.gameId}</span>
+                        <span className="answer-timestamp">{item.timestamp}</span>
                       </div>
-                      <p className="italic text-gray-700">"{item.answer}"</p>
+                      <p className="answer-text">"{item.answer}"</p>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
           ) : (
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-              <div className="bg-indigo-600 px-6 py-4">
-                <h2 className="text-xl font-bold text-white">Get Started</h2>
+            <div className="card">
+              <div className="card-header">
+                <h2 className="card-title">Get Started</h2>
               </div>
-              <div className="p-6">
-                <p className="text-gray-600 mb-4">
+              <div className="card-content">
+                <p className="card-description">
                   You haven't submitted any answers yet. Start by answering today's prompt!
                 </p>
-                <div className="flex justify-center">
+                <div className="centered-button">
                   <Link 
                     to="/game/answer" 
-                    className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-medium hover:bg-indigo-700 transition duration-300"
+                    className="action-button primary-button"
                   >
                     Start Now
                   </Link>
@@ -104,23 +104,23 @@ const HomePage = () => {
           )}
         </div>
         
-        <div className="mt-10 bg-white rounded-xl shadow-lg p-6">
-          <h2 className="text-xl font-bold text-indigo-800 mb-4">How to Play</h2>
-          <div className="grid md:grid-cols-3 gap-6">
-            <div className="bg-blue-50 p-4 rounded-lg">
-              <div className="text-blue-600 text-4xl font-bold mb-2">1</div>
-              <h3 className="font-bold text-gray-800 mb-2">Answer Prompts</h3>
-              <p className="text-gray-600">Respond to the daily question within the time limit</p>
+        <div className="how-to-play-container">
+          <h2 className="section-title">How to Play</h2>
+          <div className="steps-container">
+            <div className="step-card blue-step">
+              <div className="step-number">1</div>
+              <h3 className="step-title">Answer Prompts</h3>
+              <p className="step-description">Respond to the daily question within the time limit</p>
             </div>
-            <div className="bg-purple-50 p-4 rounded-lg">
-              <div className="text-purple-600 text-4xl font-bold mb-2">2</div>
-              <h3 className="font-bold text-gray-800 mb-2">Guess Answers</h3>
-              <p className="text-gray-600">Try to match each anonymous answer to the right friend</p>
+            <div className="step-card purple-step">
+              <div className="step-number">2</div>
+              <h3 className="step-title">Guess Answers</h3>
+              <p className="step-description">Try to match each anonymous answer to the right friend</p>
             </div>
-            <div className="bg-green-50 p-4 rounded-lg">
-              <div className="text-green-600 text-4xl font-bold mb-2">3</div>
-              <h3 className="font-bold text-gray-800 mb-2">Earn Points</h3>
-              <p className="text-gray-600">Score points for correct guesses and climb the leaderboard</p>
+            <div className="step-card green-step">
+              <div className="step-number">3</div>
+              <h3 className="step-title">Earn Points</h3>
+              <p className="step-description">Score points for correct guesses and climb the leaderboard</p>
             </div>
           </div>
         </div>
