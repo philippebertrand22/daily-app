@@ -5,6 +5,7 @@ import App from './App';
 
 import { initializeApp } from 'firebase/app';
 import { getFirestore, collection, addDoc } from 'firebase/firestore';
+import { getAuth } from "firebase/auth";
 
 // Initialize Firebase once
 const firebaseConfig = {
@@ -18,13 +19,14 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app);
 
 // Test function
 async function testFirestoreConnection() {
   console.log("Testing Firestore connection...");
   
   const testData = {
-    message: "Connection test successful",
+    message: "Connection test successful 22",
     timestamp: new Date().toISOString(),
     appVersion: process.env.REACT_APP_VERSION || "1.0.0"
   };
@@ -35,6 +37,7 @@ async function testFirestoreConnection() {
 }
 
 // Actually call the test function
+/**
 testFirestoreConnection()
   .then(() => {
     console.log("App initialized with working Firestore connection");
@@ -42,7 +45,7 @@ testFirestoreConnection()
   .catch(error => {
     console.error("Firestore connection failed:", error);
   });
-
+ */
 // Render the app regardless of Firebase connection
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
