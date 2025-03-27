@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { getDailyQuestion } from '../components/Game/questionFetcher';
 import AnswerPrompt from '../components/Game/AnswerPrompt';
 import GuessAnswers from '../components/Game/GuessAnswers';
 import Results from '../components/Game/Results';
@@ -27,34 +28,33 @@ const GamePage = () => {
     setAnswers([]);
     setResults(null);
     setError(null);
-    
-    console.log(`Loading game with ID: ${gameId}`);
-    
-    // Simulate loading data
-    setTimeout(() => {
+        
+    // Fetch daily question
+    async function loadDailyQuestion() {
       try {
+        const dailyQuestion = await getDailyQuestion();
+        setPrompt(dailyQuestion);
+        
+        // Simulate loading states based on gameId
         if (gameId === 'answer') {
-          setPrompt("What's your favorite type of cheese?");
           setGameState('answer');
         } else if (gameId === 'guess') {
-          setPrompt("What's your favorite type of cheese?");
           setGameState('guess');
           // Set mock answers for the guessing phase
           setAnswers([
-            { id: 'a1', content: 'Cheddar, because it reminds me of home.' },
-            { id: 'a2', content: 'Brie, it\'s fancy but approachable.' },
-            { id: 'a3', content: 'Gouda, because it\'s good-a!' },
-            { id: 'a4', content: 'Blue cheese, the stronger the better.' },
+            { id: 'a1', content: 'A witty response about cheese.' },
+            { id: 'a2', content: 'Another creative answer.' },
+            { id: 'a3', content: 'A humorous take on the question.' },
+            { id: 'a4', content: 'An unexpected twist of an answer.' },
           ]);
         } else if (gameId === 'results') {
-          setPrompt("What's your favorite type of cheese?");
           setGameState('results');
           // Set mock answers for the results phase
           setAnswers([
-            { id: 'a1', content: 'Cheddar, because it reminds me of home.', user: { username: 'Alex' } },
-            { id: 'a2', content: 'Brie, it\'s fancy but approachable.', user: { username: 'Taylor' } },
-            { id: 'a3', content: 'Gouda, because it\'s good-a!', user: { username: 'Jordan' } },
-            { id: 'a4', content: 'Blue cheese, the stronger the better.', user: { username: 'Riley' } },
+            { id: 'a1', content: 'A witty response about cheese.', user: { username: 'Alex' } },
+            { id: 'a2', content: 'Another creative answer.', user: { username: 'Taylor' } },
+            { id: 'a3', content: 'A humorous take on the question.', user: { username: 'Jordan' } },
+            { id: 'a4', content: 'An unexpected twist of an answer.', user: { username: 'Riley' } },
           ]);
           // Set mock results
           setResults({
@@ -62,15 +62,16 @@ const GamePage = () => {
             pointsEarned: 20
           });
         } else {
-          // For any other gameId, default to answer phase
-          setPrompt("What's your favorite type of cheese?");
+          // Default to answer phase
           setGameState('answer');
         }
       } catch (err) {
-        console.error("Error setting up game:", err);
+        console.error("Error loading daily question:", err);
         setError("Failed to load game data");
       }
-    }, 500);
+    }
+    
+    loadDailyQuestion();
   }, [gameId]);
   
   const handleAnswerSubmit = (answer) => {
@@ -89,7 +90,7 @@ const GamePage = () => {
       alert('Your answer has been submitted!');
       
       // Navigate to home
-      navigate('/');
+      navigate('/home');
     } catch (err) {
       console.error('Error saving answer:', err);
       alert('Failed to save your answer');
