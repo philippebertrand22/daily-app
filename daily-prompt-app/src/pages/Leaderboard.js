@@ -12,6 +12,7 @@ const LeaderboardPage = () => {
       setLoading(true);
       
       try {
+        /**
         // Mock users for demo
         const mockUsers = [
           { id: 'user1', username: 'Alex', avatarClass: 'blue-avatar' },
@@ -32,11 +33,12 @@ const LeaderboardPage = () => {
             correctGuesses
           };
         });
+        **/
         
         // Sort by points
-        leaderboard.sort((a, b) => b.points - a.points);
+        //leaderboard.sort((a, b) => b.points - a.points);
         
-        setLeaderboardData(leaderboard);
+        //setLeaderboardData(leaderboard);
       } catch (err) {
         console.error("Error loading leaderboard:", err);
         setError("Failed to load leaderboard data");
@@ -126,7 +128,7 @@ const LeaderboardPage = () => {
           </table>
           
           <div className="back-container">
-            <Link to="/" className="back-button">
+            <Link to="/home" className="back-button">
               Back to Home
             </Link>
           </div>

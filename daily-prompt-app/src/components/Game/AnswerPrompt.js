@@ -5,13 +5,6 @@ const AnswerPrompt = ({ prompt, onAnswerSubmit, timeRemaining }) => {
   const [answer, setAnswer] = useState('');
   
 const navigate = useNavigate();
-
-  // Format time remaining
-  const formatTime = (seconds) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    return `${hours}h ${minutes}m remaining`;
-  };
   
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -48,7 +41,7 @@ const navigate = useNavigate();
                  
           
           <button
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/home')}
             className='action-button blue-button'
             >
             Back to Home

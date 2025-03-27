@@ -4,6 +4,7 @@ import LoginPage from './pages/LoginPage';
 import HomePage from './pages/HomePage';
 import GamePage from './pages/GamePage';
 import LeaderboardPage from './pages/Leaderboard';
+import RegisterPage from './pages/RegisterPage';
 import './AppStyle.css';
 
 function App() {
@@ -14,6 +15,7 @@ function App() {
         <Route path="/home" element={<HomePage />} />
         <Route path="/game/:gameId" element={<GamePage />} />
         <Route path="/leaderboard" element={<LeaderboardPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         
         {/* Redirect root to login page */}
         <Route path="/" element={<Navigate to="/login" replace />} />

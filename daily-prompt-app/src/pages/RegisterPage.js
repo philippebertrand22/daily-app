@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-//import { createUserWithEmailAndPassword } from 'firebase/auth';
-//import { auth, db } from '../firebaseConfig';
-//import { doc, setDoc } from 'firebase/firestore';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '../firebaseConfig';
+import { doc, setDoc } from 'firebase/firestore';
 
 import './AuthPagesStyles.css';
 
@@ -17,7 +17,19 @@ function RegisterPage() {
     e.preventDefault();
     setError('');
 
+    // Validation checks
+    if (!email) {
+      setError('Email is required');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
     try {
+      // Create user with Firebase Authentication
       const userCredential = await createUserWithEmailAndPassword(
         auth, 
         email, 
@@ -25,6 +37,7 @@ function RegisterPage() {
       );
       const user = userCredential.user;
 
+      // Create a user document in Firestore
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
         createdAt: new Date().toISOString(),
@@ -34,27 +47,41 @@ function RegisterPage() {
         }
       });
 
-      navigate('/dashboard');
+      // Navigate to home after successful registration
+      navigate('/home');
     } catch (error) {
-      setError(error.message);
+      // Handle specific Firebase authentication errors
+      switch (error.code) {
+        case 'auth/email-already-in-use':
+          setError('Email is already registered. Please use a different email or try logging in.');
+          break;
+        case 'auth/invalid-email':
+          setError('Invalid email address format');
+          break;
+        case 'auth/weak-password':
+          setError('Password is too weak. Please choose a stronger password.');
+          break;
+        default:
+          setError('Registration failed. Please try again.');
+      }
       console.error('Registration error:', error);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="max-w-md w-full bg-white shadow-md rounded-lg p-8">
-        <h2 className="text-3xl font-bold text-center mb-6">Create Account</h2>
+    <div className="auth-container">
+      <div className="auth-card">
+        <h2 className="auth-title">Create Account</h2>
         
         {error && (
-          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4">
+          <div className="error-message">
             {error}
           </div>
         )}
         
-        <form onSubmit={handleRegister} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+        <form onSubmit={handleRegister}>
+          <div className="form-group">
+            <label htmlFor="email" className="form-label">
               Email Address
             </label>
             <input
@@ -63,13 +90,13 @@ function RegisterPage() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="form-input"
               placeholder="Enter your email"
             />
           </div>
           
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+          <div className="form-group">
+            <label htmlFor="password" className="form-label">
               Password
             </label>
             <input
@@ -78,13 +105,14 @@ function RegisterPage() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="form-input"
               placeholder="Create a password"
+              minLength="6"
             />
           </div>
           
-          <div>
-            <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700">
+          <div className="form-group">
+            <label htmlFor="confirm-password" className="form-label">
               Confirm Password
             </label>
             <input
@@ -93,30 +121,29 @@ function RegisterPage() {
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               required
-              className="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+              className="form-input"
               placeholder="Confirm your password"
+              minLength="6"
             />
           </div>
           
           <button
             type="submit"
-            className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+            className="auth-button"
           >
             Create Account
           </button>
         </form>
         
-        <div className="mt-6 text-center">
-          <p className="text-sm text-gray-600">
-            Already have an account?{' '}
-            <Link 
-              to="/login" 
-              className="font-medium text-indigo-600 hover:text-indigo-500"
-            >
-              Login here
-            </Link>
-          </p>
-        </div>
+        <p className="secondary-text">
+          Already have an account?{' '}
+          <Link 
+            to="/login" 
+            className="link-text"
+          >
+            Login here
+          </Link>
+        </p>
       </div>
     </div>
   );

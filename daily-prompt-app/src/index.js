@@ -3,49 +3,50 @@ import ReactDOM from 'react-dom/client';
 import './index.css';
 import App from './App';
 
-import { initializeApp } from 'firebase/app';
-import { getFirestore, collection, addDoc } from 'firebase/firestore';
-import { getAuth } from "firebase/auth";
+import {db} from './firebaseConfig'; // Import your Firebase configuration
+import { questions } from './questions'; // Import your questions array
 
-// Initialize Firebase once
-const firebaseConfig = {
-  apiKey: process.env.REACT_APP_FIREBASE_API_KEY,
-  authDomain: process.env.REACT_APP_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.REACT_APP_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.REACT_APP_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.REACT_APP_FIREBASE_APP_ID
-};
+import { collection, addDoc, serverTimestamp, writeBatch, doc } from 'firebase/firestore';
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-const auth = getAuth(app);
-
-// Test function
-async function testFirestoreConnection() {
-  console.log("Testing Firestore connection...");
-  
-  const testData = {
-    message: "Connection test successful 22",
-    timestamp: new Date().toISOString(),
-    appVersion: process.env.REACT_APP_VERSION || "1.0.0"
-  };
-
-  const docRef = await addDoc(collection(db, "test"), testData);
-  console.log("✅ Firestore connection successful! Document written with ID:", docRef.id);
-  return true;
+async function insertQuestions() {
+    try {
+        // Get a reference to the questions collection
+        const questionsCollection = collection(db, 'questions');
+        
+        // Create a batch for efficient writing
+        const batch = writeBatch(db);
+        
+        // Prepare questions for batch insertion
+        questions.forEach((questionText, index) => {
+            // Create a new document reference with a sequential ID
+            const docRef = doc(questionsCollection, `question_${index + 1}`);
+            
+            // Prepare the document data
+            const questionData = {
+                question_text: questionText,
+                question_number: index + 1,
+                category: 'Jackbox-style',
+                status: 'unprocessed',
+                created_at: serverTimestamp()
+            };
+            
+            // Add to batch
+            batch.set(docRef, questionData);
+        });
+        
+        // Commit the batch
+        await batch.commit();
+        
+        console.log(`Successfully inserted ${questions.length} questions to Firestore.`);
+    } catch (error) {
+        console.error('Error inserting questions:', error);
+    }
 }
 
-// Actually call the test function
-/**
-testFirestoreConnection()
-  .then(() => {
-    console.log("App initialized with working Firestore connection");
-  })
-  .catch(error => {
-    console.error("Firestore connection failed:", error);
-  });
- */
+// Call the function to insert questions
+// Uncomment the following line to insert questions into Firestore
+  //insertQuestions();
+
 // Render the app regardless of Firebase connection
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(
@@ -53,6 +54,3 @@ root.render(
     <App />
   </React.StrictMode>
 );
-
-// Export Firebase instances if needed elsewhere
-export { app, db };

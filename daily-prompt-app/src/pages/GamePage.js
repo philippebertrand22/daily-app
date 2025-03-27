@@ -156,7 +156,7 @@ const GamePage = () => {
           <p className="error-title">Error:</p>
           <p>{error}</p>
           <button 
-            onClick={() => navigate('/')}
+            onClick={() => navigate('/home')}
             className="home-button"
           >
             Return Home

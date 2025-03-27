@@ -86,7 +86,7 @@ const Results = ({ game = {}, answers = [], results = null }) => {
           
           <div className="button-container">
             <button 
-              onClick={() => navigate('/')}
+              onClick={() => navigate('/home')}
               className="action-button blue-button"
             >
               Back to Home

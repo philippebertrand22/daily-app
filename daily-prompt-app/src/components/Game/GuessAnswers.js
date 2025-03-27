@@ -129,7 +129,7 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses }) => {
               )}
               <button
                 style = {{marginLeft:'15px'}}
-                onClick={() => navigate('/')}
+                onClick={() => navigate('/home')}
                 className='action-button blue-button'
                 >
                 Back to Home
