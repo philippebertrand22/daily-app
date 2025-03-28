@@ -10,6 +10,7 @@ function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
@@ -33,7 +34,8 @@ function RegisterPage() {
       const userCredential = await createUserWithEmailAndPassword(
         auth, 
         email, 
-        password
+        password,
+        username
       );
       const user = userCredential.user;
 
@@ -42,8 +44,7 @@ function RegisterPage() {
         email: user.email,
         createdAt: new Date().toISOString(),
         profile: {
-          emailVerified: false,
-          registrationType: 'email'
+          username: username
         }
       });
 
@@ -124,6 +125,21 @@ function RegisterPage() {
               className="form-input"
               placeholder="Confirm your password"
               minLength="6"
+            />
+          </div>
+
+          <div className="form-group">
+            <label htmlFor="username" className="form-label">
+              Username
+            </label>
+            <input
+              type="username"
+              id="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              required
+              className="form-input"
+              placeholder="Enter your username"
             />
           </div>
           
