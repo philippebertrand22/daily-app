@@ -22,37 +22,77 @@ const AnswerPrompt = () => {
   
   const navigate = useNavigate();
   
-  // Fetch the most recent daily question
-  const fetchLatestQuestion = useCallback(async () => {
-    try {
-      const questionsRef = collection(db, 'daily_questions');
-      const q = query(
-        questionsRef, 
-        orderBy('selected_at', 'desc'), // Sort by the selected_at field
-        limit(1) // Only get the most recent question
-      );
+// Fetch the most recent daily question
+const fetchLatestQuestion = useCallback(async () => {
+  try {
+    // First, let's try to get ALL questions to see if there's data
+    const questionsRef = collection(db, 'daily_questions');
+    
+    // Debug: Log simple query without filters first
+    const debugSnapshot = await getDocs(questionsRef);
+    console.log(`Found ${debugSnapshot.size} total documents in daily_questions`);
+    
+    // Check if the documents have the selected_at field
+    const docsWithData = [];
+    debugSnapshot.forEach(doc => {
+      const data = doc.data();
+      console.log(`Document ${doc.id}:`, data);
+      docsWithData.push({id: doc.id, ...data});
+    });
+    
+    // Original query with logging
+    console.log('Now attempting original query with orderBy and limit');
+    const q = query(
+      questionsRef, 
+      orderBy('selected_at', 'desc'),
+      limit(1)
+    );
 
-      const querySnapshot = await getDocs(q);
+    const querySnapshot = await getDocs(q);
+    console.log(`Original query returned ${querySnapshot.size} documents`);
+    
+    if (!querySnapshot.empty) {
+      const latestQuestion = querySnapshot.docs[0].data();
+      const questionId = querySnapshot.docs[0].id;
       
-      if (!querySnapshot.empty) {
-        const latestQuestion = querySnapshot.docs[0].data();
-        const questionId = querySnapshot.docs[0].id;
+      console.log('Found latest question:', latestQuestion);
+      
+      // Set the question and its ID
+      setQuestion({
+        ...latestQuestion,
+        id: questionId
+      });
+    } else {
+      // If no results, check the debug data to see why
+      if (docsWithData.length > 0) {
+        console.log('Documents exist but query returned nothing. Checking fields:');
         
-        // Set the question and its ID
-        setQuestion({
-          ...latestQuestion,
-          id: questionId
-        });
-      } else {
-        setError('No questions available');
-        setCanSubmit(false);
+        // Check if selected_at exists and its format
+        const hasSelectedAt = docsWithData.filter(doc => doc.selected_at);
+        console.log(`${hasSelectedAt.length} documents have selected_at field`);
+        
+        if (hasSelectedAt.length > 0) {
+          console.log('Example selected_at value:', hasSelectedAt[0].selected_at);
+          
+          // Try falling back to most recent document regardless of field
+          setQuestion({
+            ...docsWithData[0],
+            id: docsWithData[0].id
+          });
+          console.log('Using first document as fallback');
+        }
       }
-    } catch (error) {
-      console.error('Error fetching question:', error);
-      setError('Failed to load today\'s question');
+      
+      setError('No questions available through the query');
       setCanSubmit(false);
     }
-  }, []);
+  } catch (error) {
+    console.error('Error fetching question:', error);
+    console.error('Error details:', error.code, error.message);
+    setError('Failed to load today\'s question: ' + error.message);
+    setCanSubmit(false);
+  }
+}, []);
   
   // Fetch the latest question on component mount
   useEffect(() => {
@@ -61,29 +101,38 @@ const AnswerPrompt = () => {
   
   // Check daily submission
   const checkDailySubmission = useCallback(async () => {
+    console.log("Running checkDailySubmission");
+    console.log("Question:", question);
+    console.log("Current user:", auth.currentUser);
+    
     if (!question || !auth.currentUser) {
+      console.log("Can't submit: missing question or user");
       setCanSubmit(false);
       return;
     }
-
+  
     try {
       const answersRef = collection(
         db, 
         'daily_questions', 
-        question.id,  // This is the question document ID
-        'answers' // Subcollection of answers
+        question.id,
+        'answers'
       );
-
+  
       const q = query(
         answersRef,
-        where('userId', '==', auth.currentUser.uid) // Check if the current user already answered
+        where('userId', '==', auth.currentUser.uid)
       );
-
+  
       const querySnapshot = await getDocs(q);
-
+      console.log(`Found ${querySnapshot.size} previous answers from this user`);
+  
       if (!querySnapshot.empty) {
         setCanSubmit(false);
         setError('You have already answered today\'s question');
+      } else {
+        console.log("User can submit - no previous answers found");
+        setCanSubmit(true); // Explicitly set to true if no previous answer
       }
     } catch (error) {
       console.error('Submission check error:', error);
