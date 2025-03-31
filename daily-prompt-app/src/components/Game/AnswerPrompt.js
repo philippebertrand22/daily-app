@@ -9,6 +9,7 @@ import {
   collection, 
   where, 
   getDocs,
+  getDoc,
   orderBy,
   limit
 } from 'firebase/firestore';
@@ -19,80 +20,68 @@ const AnswerPrompt = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [canSubmit, setCanSubmit] = useState(true);
   const [error, setError] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
   
   const navigate = useNavigate();
   
-// Fetch the most recent daily question
-const fetchLatestQuestion = useCallback(async () => {
-  try {
-    // First, let's try to get ALL questions to see if there's data
-    const questionsRef = collection(db, 'daily_questions');
-    
-    // Debug: Log simple query without filters first
-    const debugSnapshot = await getDocs(questionsRef);
-    console.log(`Found ${debugSnapshot.size} total documents in daily_questions`);
-    
-    // Check if the documents have the selected_at field
-    const docsWithData = [];
-    debugSnapshot.forEach(doc => {
-      const data = doc.data();
-      console.log(`Document ${doc.id}:`, data);
-      docsWithData.push({id: doc.id, ...data});
-    });
-    
-    // Original query with logging
-    console.log('Now attempting original query with orderBy and limit');
-    const q = query(
-      questionsRef, 
-      orderBy('selected_at', 'desc'),
-      limit(1)
-    );
+  // Fetch the most recent daily question
+  const fetchLatestQuestion = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // First, let's try to get ALL questions to see if there's data
+      const questionsRef = collection(db, 'daily_questions');
+      
+      // Original query with logging
+      const q = query(
+        questionsRef, 
+        orderBy('selected_at', 'desc'),
+        limit(1)
+      );
 
-    const querySnapshot = await getDocs(q);
-    console.log(`Original query returned ${querySnapshot.size} documents`);
-    
-    if (!querySnapshot.empty) {
-      const latestQuestion = querySnapshot.docs[0].data();
-      const questionId = querySnapshot.docs[0].id;
+      const querySnapshot = await getDocs(q);
       
-      console.log('Found latest question:', latestQuestion);
-      
-      // Set the question and its ID
-      setQuestion({
-        ...latestQuestion,
-        id: questionId
-      });
-    } else {
-      // If no results, check the debug data to see why
-      if (docsWithData.length > 0) {
-        console.log('Documents exist but query returned nothing. Checking fields:');
+      if (!querySnapshot.empty) {
+        const latestQuestion = querySnapshot.docs[0].data();
+        const questionId = querySnapshot.docs[0].id;
         
-        // Check if selected_at exists and its format
-        const hasSelectedAt = docsWithData.filter(doc => doc.selected_at);
-        console.log(`${hasSelectedAt.length} documents have selected_at field`);
+        console.log('Found latest question:', latestQuestion);
         
-        if (hasSelectedAt.length > 0) {
-          console.log('Example selected_at value:', hasSelectedAt[0].selected_at);
-          
-          // Try falling back to most recent document regardless of field
+        // Set the question and its ID
+        setQuestion({
+          ...latestQuestion,
+          id: questionId
+        });
+        
+        // Reset error if previously set
+        setError('');
+        setCanSubmit(true);
+      } else {
+        // Fallback: get all questions without ordering
+        const debugSnapshot = await getDocs(questionsRef);
+        
+        if (debugSnapshot.size > 0) {
+          // Use the first document as fallback
+          const doc = debugSnapshot.docs[0];
           setQuestion({
-            ...docsWithData[0],
-            id: docsWithData[0].id
+            ...doc.data(),
+            id: doc.id
           });
           console.log('Using first document as fallback');
+          setError('');
+          setCanSubmit(true);
+        } else {
+          setError('No questions available');
+          setCanSubmit(false);
         }
       }
-      
-      setError('No questions available through the query');
-      setCanSubmit(false);
+    } catch (error) {
+      console.error('Error fetching question:', error);
+      setError('Failed to load today\'s question: ' + error.message);
+      // Don't set canSubmit to false here, let checkDailySubmission handle that
+    } finally {
+      setIsLoading(false);
     }
-  } catch (error) {
-    console.error('Error fetching question:', error);
-    console.error('Error details:', error.code, error.message);
-    setError('Failed to load today\'s question: ' + error.message);
-    setCanSubmit(false);
-  }
-}, []);
+  }, []);
   
   // Fetch the latest question on component mount
   useEffect(() => {
@@ -101,14 +90,15 @@ const fetchLatestQuestion = useCallback(async () => {
   
   // Check daily submission
   const checkDailySubmission = useCallback(async () => {
+    if (isLoading) return; // Skip if still loading
+    
     console.log("Running checkDailySubmission");
     console.log("Question:", question);
     console.log("Current user:", auth.currentUser);
     
     if (!question || !auth.currentUser) {
-      console.log("Can't submit: missing question or user");
-      setCanSubmit(false);
-      return;
+      console.log("Can't check submission: missing question or user");
+      return; // Don't modify canSubmit here, wait until data is available
     }
   
     try {
@@ -136,8 +126,9 @@ const fetchLatestQuestion = useCallback(async () => {
       }
     } catch (error) {
       console.error('Submission check error:', error);
+      // Don't modify canSubmit on error, leave it as is
     }
-  }, [question]);
+  }, [question, auth.currentUser, isLoading]);
   
   // Check submission eligibility when question or user changes
   useEffect(() => {
@@ -157,12 +148,12 @@ const fetchLatestQuestion = useCallback(async () => {
       setError('Please enter an answer');
       return;
     }
-
+  
     if (trimmedAnswer.length < 10) {
       setError('Answer must be at least 10 characters');
       return;
     }
-
+  
     if (trimmedAnswer.length > 1000) {
       setError('Answer cannot exceed 1000 characters');
       return;
@@ -183,25 +174,46 @@ const fetchLatestQuestion = useCallback(async () => {
     setIsSubmitting(true);
     
     try {
-      // Save answer to Firestore under the question's answers subcollection
-      const answerRef = doc(
-        db, 
-        'daily_questions', 
-        question.id, // Question ID
-        'answers', // Subcollection of answers
-        auth.currentUser.uid // Document ID is the user's UID
-      );
+      // First fetch the user's data to get the username
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      console.log('User snapshot:', userSnap.data());
       
-      await setDoc(answerRef, {
+      // Option 1: Create a new collection for all answers
+      const answersCollectionRef = collection(db, 'answers');
+      const newAnswerRef = doc(answersCollectionRef); // Auto-generate ID
+  
+      let username = 'Anonymous';
+      if (userSnap.exists()) {
+        username = userSnap.data()?.profile?.username || 'Anonymous';
+        console.log('Username:', username);
+      }
+
+      await setDoc(newAnswerRef, {
         userId: auth.currentUser.uid,
         answer: trimmedAnswer,
         questionId: question.id,
         question: question.question,
         createdAt: serverTimestamp(),
-        userDisplayName: auth.currentUser.displayName || 'Anonymous'
+        username: username || 'Anonymous'
       });
       
-      // Navigate or show success
+      // Also store reference in original subcollection to track who answered
+      const questionAnswerRef = doc(
+        db, 
+        'daily_questions', 
+        question.id,
+        'answers',
+        auth.currentUser.uid
+      );
+      
+      await setDoc(questionAnswerRef, {
+        userId: auth.currentUser.uid,
+        answerId: newAnswerRef.id,
+        createdAt: serverTimestamp()
+      });
+      
+      // Navigate to home or success page
       navigate('/home');
     } catch (error) {
       console.error('Submission error:', error);
@@ -212,7 +224,7 @@ const fetchLatestQuestion = useCallback(async () => {
   };
   
   // Loading state
-  if (!question) {
+  if (isLoading) {
     return <div>Loading question...</div>;
   }
   
@@ -222,7 +234,11 @@ const fetchLatestQuestion = useCallback(async () => {
         <h2 className="game-card-title">Today's Question</h2>
       </div>
       <div className="game-card-content">
-        <p className="question-text">{question.question}</p>
+        {question ? (
+          <p className="question-text">{question.question}</p>
+        ) : (
+          <p className="question-text">No question available</p>
+        )}
         
         {error && (
           <div 
@@ -246,7 +262,7 @@ const fetchLatestQuestion = useCallback(async () => {
             value={answer}
             onChange={(e) => setAnswer(e.target.value)}
             rows={4}
-            disabled={!canSubmit}
+            disabled={!canSubmit || !question}
             maxLength={1000}
           />
           <div style={{ 
@@ -261,10 +277,11 @@ const fetchLatestQuestion = useCallback(async () => {
             type="submit" 
             className="submit-button"
             disabled={
-              !answer.trim() || 
               isSubmitting || 
               !canSubmit || 
-              answer.length < 10 || 
+              !question ||
+              !answer.trim() || 
+              answer.trim().length < 1 || 
               answer.length > 1000
             }
           >
