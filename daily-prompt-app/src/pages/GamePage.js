@@ -23,30 +23,52 @@ const GamePage = () => {
     setAnswers([]);
     setResults(null);
     setError(null);
-    
-    const fetchGroupMembers = async () => {
+
+    // Function to fetch daily question and answers
+    const queryForAnswers = async () => {
       try {
         const dailyQuestion = await getDailyQuestion();
-        //console.log('Daily question:', dailyQuestion);
+        
+        if (!dailyQuestion) {
+          console.warn("No daily question found.");
+          return [];
+        }
         
         const answersCollectionRef = collection(db, 'answers');
-        
         const q = query(answersCollectionRef, where('question', '==', dailyQuestion));
         const querySnapshot = await getDocs(q);
-        //console.log('Answers:', querySnapshot);
-
+    
+        if (querySnapshot.empty) {
+          console.warn("No matching answers found for:", dailyQuestion);
+          return [];
+        }
+    
         const results = querySnapshot.docs.map(doc => ({
           id: doc.id,
           username: doc.data().username,
           answer: doc.data().answer
         }));
-        //console.log('Results:', results);
+    
+        return results;
+    
+      } catch (err) {
+        console.error("Error executing Firestore query:", err);
+        return [];
+      }
+    };
+
+    // Function to fetch group members
+    const fetchGroupMembers = async () => {
+      try {
+        // Await queryForAnswers here to ensure it's done before setting state
+        const results = await queryForAnswers();
+        //console.log("Fetched answers:", results);
 
         // If results exist, update members list dynamically
         let members = results.length > 0 
           ? results.map(doc => ({
               id: doc.id,
-              name: doc.username // Assuming username represents the member's name
+              name: doc.username
             }))
           : [
               { id: '1', name: 'Alex' },
@@ -61,40 +83,37 @@ const GamePage = () => {
       }
     };
 
-    // Fetch daily question
+    // Fetch daily question and group members
     async function loadDailyQuestion() {
       try {
         const dailyQuestion = await getDailyQuestion();
         setPrompt(dailyQuestion);
+
+        // Await queryForAnswers here to ensure it's done before setting state
+        const results = await queryForAnswers();
+        //console.log("Fetched answers:", results)
         
         // Simulate loading states based on gameId
         if (gameId === 'answer') {
           setGameState('answer');
         } else if (gameId === 'guess') {
           setGameState('guess');
-          // Set mock answers for the guessing phase
-          setAnswers([
-            { id: 'a1', content: 'A witty response about cheese.' },
-            { id: 'a2', content: 'Another creative answer.' },
-            { id: 'a3', content: 'A humorous take on the question.' },
-            { id: 'a4', content: 'An unexpected twist of an answer.' },
-          ]);
+          setAnswers(results.map(item => ({
+            id: item.id,
+            content: item.answer,
+          })));
         } else if (gameId === 'results') {
           setGameState('results');
-          // Set mock answers for the results phase
-          setAnswers([
-            { id: 'a1', content: 'A witty response about cheese.', user: { username: 'Alex' } },
-            { id: 'a2', content: 'Another creative answer.', user: { username: 'Taylor' } },
-            { id: 'a3', content: 'A humorous take on the question.', user: { username: 'Jordan' } },
-            { id: 'a4', content: 'An unexpected twist of an answer.', user: { username: 'Riley' } },
-          ]);
-          // Set mock results
+          setAnswers(results.map(item => ({
+            id: item.id,
+            content: item.answer,
+            user: item.username
+          })));
           setResults({
             correctGuesses: 2,
             pointsEarned: 20
           });
         } else {
-          // Default to answer phase
           setGameState('answer');
         }
       } catch (err) {
@@ -102,10 +121,12 @@ const GamePage = () => {
         setError("Failed to load game data");
       }
     }
-    
+
     fetchGroupMembers();
     loadDailyQuestion();
+
   }, [gameId]);
+
   
   const handleAnswerSubmit = (answer) => {
     console.log('Answer submitted:', answer);
