@@ -39,11 +39,6 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses }) => {
     }
   };
 
-  const getCompletionPercentage = () => {
-    if (!answers || answers.length === 0) return 0;
-    return (Object.keys(guesses).length / answers.length) * 100;
-  };
-
   return (
     <div className="game-card">
       <div className="game-card-header">

@@ -5,6 +5,8 @@ import AnswerPrompt from '../components/Game/AnswerPrompt';
 import GuessAnswers from '../components/Game/GuessAnswers';
 import Results from '../components/Game/Results';
 import './GamePageStyles.css'; // Import the new CSS file
+import { collection, doc, getDocs, where, query } from 'firebase/firestore';
+import { db } from '../firebaseConfig'; // Adjust the import based on your project structure
 
 const GamePage = () => {
   const { gameId } = useParams();
@@ -14,21 +16,51 @@ const GamePage = () => {
   const [answers, setAnswers] = useState([]);
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
-  
-  // Mock group members
-  const groupMembers = [
-    { id: '1', name: 'Alex' },
-    { id: '2', name: 'Taylor' },
-    { id: '3', name: 'Jordan' },
-    { id: '4', name: 'Riley' },
-  ];
+  const [groupMembers, setGroupMembers] = useState([]);
   
   useEffect(() => {
     // Reset state when game ID changes
     setAnswers([]);
     setResults(null);
     setError(null);
+    
+    const fetchGroupMembers = async () => {
+      try {
+        const dailyQuestion = await getDailyQuestion();
+        //console.log('Daily question:', dailyQuestion);
         
+        const answersCollectionRef = collection(db, 'answers');
+        
+        const q = query(answersCollectionRef, where('question', '==', dailyQuestion));
+        const querySnapshot = await getDocs(q);
+        //console.log('Answers:', querySnapshot);
+
+        const results = querySnapshot.docs.map(doc => ({
+          id: doc.id,
+          username: doc.data().username,
+          answer: doc.data().answer
+        }));
+        //console.log('Results:', results);
+
+        // If results exist, update members list dynamically
+        let members = results.length > 0 
+          ? results.map(doc => ({
+              id: doc.id,
+              name: doc.username // Assuming username represents the member's name
+            }))
+          : [
+              { id: '1', name: 'Alex' },
+              { id: '2', name: 'Taylor' },
+              { id: '3', name: 'Jordan' },
+              { id: '4', name: 'Riley' },
+            ];
+
+        setGroupMembers(members);
+      } catch (err) {
+        console.log('Error fetching group members:', err);
+      }
+    };
+
     // Fetch daily question
     async function loadDailyQuestion() {
       try {
@@ -71,6 +103,7 @@ const GamePage = () => {
       }
     }
     
+    fetchGroupMembers();
     loadDailyQuestion();
   }, [gameId]);
   
