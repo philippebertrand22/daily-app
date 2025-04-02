@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import './HomePageStyles.css'; // Updated import to match your CSS filename
+import { Link, useNavigate } from 'react-router-dom';
+import { getAuth, signOut } from 'firebase/auth';
+import './HomePageStyles.css';
 
 const HomePage = () => {
   const [savedAnswers, setSavedAnswers] = useState([]);
+  const navigate = useNavigate();
+  const auth = getAuth();
 
   useEffect(() => {
     // Load saved answers from localStorage
@@ -16,7 +19,24 @@ const HomePage = () => {
     setSavedAnswers(answers);
   }, []);
 
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      // Redirect to login page after successful logout
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   return (
+    <div className="home-container">
+      <div className="header">
+        <button className="logout-button" onClick={handleLogout}>
+          Logout
+        </button>
+      </div>
+
     <div className="home-container">
       <div className="home-content">
         <div className="app-title-container">
@@ -105,6 +125,7 @@ const HomePage = () => {
         </div>
       </div>
     </div>
+  </div>
   );
 };
 
