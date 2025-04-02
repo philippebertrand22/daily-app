@@ -43,7 +43,7 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses }) => {
     <div className="game-card">
       <div className="game-card-header">
       <h2 className="game-card-title">Who Said What?</h2>
-      <h4 className="game-card-subtitle">Match each answer to the friend you think wrote it</h4>
+      <h4 style={{color:"white"}}>Match each answer to the friend you think wrote it</h4>
     </div>
       <div className="game-card-content">
         <div>          
