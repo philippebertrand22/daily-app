@@ -103,27 +103,6 @@ const HomePage = () => {
             </div>
           )}
         </div>
-        
-        <div className="how-to-play-container">
-          <h2 className="section-title">How to Play</h2>
-          <div className="steps-container">
-            <div className="step-card blue-step">
-              <div className="step-number">1</div>
-              <h3 className="step-title">Answer Prompts</h3>
-              <p className="step-description">Respond to the daily question within the time limit</p>
-            </div>
-            <div className="step-card purple-step">
-              <div className="step-number">2</div>
-              <h3 className="step-title">Guess Answers</h3>
-              <p className="step-description">Try to match each anonymous answer to the right friend</p>
-            </div>
-            <div className="step-card green-step">
-              <div className="step-number">3</div>
-              <h3 className="step-title">Earn Points</h3>
-              <p className="step-description">Score points for correct guesses and climb the leaderboard</p>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   );
