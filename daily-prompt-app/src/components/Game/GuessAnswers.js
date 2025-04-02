@@ -46,11 +46,11 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses }) => {
       <h4 className="game-card-subtitle">Match each answer to the friend you think wrote it</h4>
     </div>
       <div className="game-card-content">
-        <div className="bg-white rounded-xl shadow-xl overflow-hidden">          
-          <div className="p-6">           
+        <div>          
+          <div>           
             <form onSubmit={handleSubmit}>
               {answers && answers.length > 0 ? (
-                <div style = {{marginTop:'10px'}} className="space-y-6">
+                <div style = {{marginTop:'10px'}}>
                   {answers.map((answer, index) => (
                     <div 
                       key={index} 
@@ -59,14 +59,14 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses }) => {
                       }`}
                     >
                       <div className="mb-4">
-                        <span style = {{marginLeft:'15px'}} className="inline-block bg-purple-100 text-purple-800 text-xs font-medium px-2.5 py-1 rounded-full mb-2">
+                        <span style = {{marginLeft:'15px', fontWeight:'bold'}}>
                           Answer #{index + 1}
                         </span>
-                        <p style = {{marginLeft:'15px'}} className="text-gray-800 font-medium">"{answer.content || 'No content provided'}"</p>
+                        <p style = {{marginLeft:'15px'}} >"{answer.content || 'No content provided'}"</p>
                       </div>
                       
-                      <div style = {{marginLeft:'15px'}} className="mt-3">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <div style = {{marginLeft:'15px'}}>
+                        <label style = {{marginRight:'15px'}}>
                           Who do you think said this?
                         </label>
                         <select
@@ -103,7 +103,7 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses }) => {
               )}
               
               {error && (
-                <div className="mt-6 p-4 bg-red-100 text-red-700 rounded-lg">
+                <div>
                   {error}
                 </div>
               )}
