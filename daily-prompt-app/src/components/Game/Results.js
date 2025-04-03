@@ -1,10 +1,33 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ResultsStyles.css'; // Import custom CSS
 
 const Results = ({ game = {}, answers = [], results = null }) => {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
   
+  // Verify answers data when component mounts or answers change
+  useEffect(() => {
+    if (answers && answers.length > 0) {
+      console.log('Answers data:', answers);
+    }
+    setIsLoading(false);
+  }, [answers]);
+  
+  // Show loading state
+  if (isLoading) {
+    return (
+      <div className="results-container">
+        <div className="results-card">
+          <div className="results-header">
+            <h2 className="header-title">Loading Results...</h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
+  
+  // Handle empty state
   if (!game || !answers || answers.length === 0) {
     return (
       <div className="results-container">
@@ -14,7 +37,7 @@ const Results = ({ game = {}, answers = [], results = null }) => {
           </div>
           <div className="empty-content">
             <p className="empty-message">No results to display</p>
-              <div className="button-container">
+            <div className="button-container">
               <button 
                 onClick={() => navigate('/home')}
                 className="action-button blue-button"
@@ -45,7 +68,7 @@ const Results = ({ game = {}, answers = [], results = null }) => {
         
         <div className="results-content">
           <div className="prompt-card">
-            <h3 className="section-subheading">Today's Prompt:</h3>
+            <h3 className="section-subheading">Prompt:</h3>
             <p className="prompt-text">{game.prompt || "What was the prompt?"}</p>
           </div>
           
@@ -67,9 +90,19 @@ const Results = ({ game = {}, answers = [], results = null }) => {
           <h3 className="answers-heading">All Answers:</h3>
           
           <div className="answers-container">
-            {answers.map((answer, index) => {
-              const username = answer.user?.username || `User ${index + 1}`;
-              const initial = username.charAt(0).toUpperCase();
+            {Array.isArray(answers) && answers.map((answer, index) => {
+              // Handle both possible data structures from GamePage
+              // Either username is directly in user field or nested in user object
+              let username;
+              if (typeof answer.user === 'string') {
+                username = answer.user;
+              } else if (answer.user && answer.user.username) {
+                username = answer.user.username;
+              } else {
+                username = `User ${index + 1}`;
+              }
+              
+              const initial = (username?.charAt(0) || '?').toUpperCase();
               
               // Generate a consistent color based on the username
               const colors = ['blue-avatar', 'purple-avatar', 'pink-avatar', 'yellow-avatar', 'green-avatar', 'indigo-avatar'];
@@ -91,6 +124,12 @@ const Results = ({ game = {}, answers = [], results = null }) => {
                 </div>
               );
             })}
+            
+            {(!Array.isArray(answers) || answers.length === 0) && (
+              <div className="empty-answers">
+                <p>No answers available for this game.</p>
+              </div>
+            )}
           </div>
           
           <div className="button-container">

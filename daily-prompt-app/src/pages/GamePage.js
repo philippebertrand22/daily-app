@@ -36,8 +36,8 @@ const GamePage = () => {
         const yesterdayQuestion = await getYesterdayQuestion();
         if (!isMounted) return;
         
-        if (dailyQuestion) {
-          setPrompt(dailyQuestion);
+        if (yesterdayQuestion) {
+          setPrompt(yesterdayQuestion);
           
           // Fetch answers for this question
           const answersData = await fetchAnswersForQuestion(yesterdayQuestion);

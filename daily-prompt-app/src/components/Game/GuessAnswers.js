@@ -62,6 +62,11 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses }) => {
         <h4 style={{ color: "white" }}>Match each answer to the friend you think wrote it</h4>
       </div>
       <div className="game-card-content">
+      <div>
+        <span id="question" style={{ marginLeft: '15px', fontWeight: 'bold' }} className="question-title">
+          {question}
+        </span>
+      </div>
         <form onSubmit={handleSubmit}>
           {answers.length > 0 ? (
             <div style={{ marginTop: '10px' }}>
@@ -72,11 +77,6 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses }) => {
                     guesses[answer.id] ? 'border-purple-300 bg-purple-50' : 'border-gray-200'
                   }`}
                 >
-                  <div>
-                    <span id="question" style={{ marginLeft: '15px', fontWeight: 'bold' }} className="question-title">
-                      {question}
-                    </span>
-                  </div>
                   <div className="mb-4">
                     <span style={{ marginLeft: '15px', fontWeight: 'bold' }}>
                       Answer #{index + 1}
