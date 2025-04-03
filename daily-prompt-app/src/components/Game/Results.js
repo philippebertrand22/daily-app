@@ -14,12 +14,21 @@ const Results = ({ game = {}, answers = [], results = null }) => {
           </div>
           <div className="empty-content">
             <p className="empty-message">No results to display</p>
-            <button
-              onClick={() => navigate('/')}
-              className="action-button blue-button"
-            >
-              Back to Home
-            </button>
+              <div className="button-container">
+              <button 
+                onClick={() => navigate('/home')}
+                className="action-button blue-button"
+              >
+                Back to Home
+              </button>
+              
+              <button 
+                onClick={() => navigate('/leaderboard')}
+                className="action-button purple-button"
+              >
+                View Leaderboard
+              </button>
+            </div>
           </div>
         </div>
       </div>

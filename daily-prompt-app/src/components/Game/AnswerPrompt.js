@@ -44,7 +44,7 @@ const AnswerPrompt = () => {
         const latestQuestion = querySnapshot.docs[0].data();
         const questionId = querySnapshot.docs[0].id;
         
-        console.log('Found latest question:', latestQuestion);
+        //console.log('Found latest question:', latestQuestion);
         
         // Set the question and its ID
         setQuestion({
@@ -92,9 +92,9 @@ const AnswerPrompt = () => {
   const checkDailySubmission = useCallback(async () => {
     if (isLoading) return; // Skip if still loading
     
-    console.log("Running checkDailySubmission");
-    console.log("Question:", question);
-    console.log("Current user:", auth.currentUser);
+    //console.log("Running checkDailySubmission");
+    //console.log("Question:", question);
+    //console.log("Current user:", auth.currentUser);
     
     if (!question || !auth.currentUser) {
       console.log("Can't check submission: missing question or user");

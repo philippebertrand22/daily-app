@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getDailyQuestion } from '../components/Game/questionFetcher';
+import { getDailyQuestion, getYesterdayQuestion } from '../components/Game/questionFetcher';
 import AnswerPrompt from '../components/Game/AnswerPrompt';
 import GuessAnswers from '../components/Game/GuessAnswers';
 import Results from '../components/Game/Results';
-import './GamePageStyles.css'; // Import the new CSS file
-import { collection, doc, getDocs, where, query } from 'firebase/firestore';
-import { db } from '../firebaseConfig'; // Adjust the import based on your project structure
+import './GamePageStyles.css';
+import { collection, getDocs, where, query } from 'firebase/firestore';
+import { db } from '../firebaseConfig';
 
 const GamePage = () => {
   const { gameId } = useParams();
@@ -18,120 +18,120 @@ const GamePage = () => {
   const [error, setError] = useState(null);
   const [groupMembers, setGroupMembers] = useState([]);
   
+  // Fetch question and answers only once on component mount
   useEffect(() => {
+    let isMounted = true;
+    
     // Reset state when game ID changes
     setAnswers([]);
     setResults(null);
     setError(null);
 
-    // Function to fetch daily question and answers
-    const queryForAnswers = async () => {
+    async function loadGameData() {
       try {
+        // Fetch the daily question first - only once
         const dailyQuestion = await getDailyQuestion();
+        if (!isMounted) return;
+
+        const yesterdayQuestion = await getYesterdayQuestion();
+        if (!isMounted) return;
         
-        if (!dailyQuestion) {
-          console.warn("No daily question found.");
-          return [];
-        }
-        
-        const answersCollectionRef = collection(db, 'answers');
-        const q = query(answersCollectionRef, where('question', '==', dailyQuestion));
-        const querySnapshot = await getDocs(q);
-    
-        if (querySnapshot.empty) {
-          console.warn("No matching answers found for:", dailyQuestion);
-          return [];
-        }
-    
-        const results = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          username: doc.data().username,
-          answer: doc.data().answer
-        }));
-    
-        return results;
-    
-      } catch (err) {
-        console.error("Error executing Firestore query:", err);
-        return [];
-      }
-    };
-
-    // Function to fetch group members
-    const fetchGroupMembers = async () => {
-      try {
-        // Await queryForAnswers here to ensure it's done before setting state
-        const results = await queryForAnswers();
-        //console.log("Fetched answers:", results);
-
-        // If results exist, update members list dynamically
-        let members = results.length > 0 
-          ? results.map(doc => ({
-              id: doc.id,
-              name: doc.username
-            }))
-          : [
-              { id: '1', name: 'Alex' },
-              { id: '2', name: 'Taylor' },
-              { id: '3', name: 'Jordan' },
-              { id: '4', name: 'Riley' },
-            ];
-
-        setGroupMembers(members);
-      } catch (err) {
-        console.log('Error fetching group members:', err);
-      }
-    };
-
-    // Fetch daily question and group members
-    async function loadDailyQuestion() {
-      try {
-        const dailyQuestion = await getDailyQuestion();
-        setPrompt(dailyQuestion);
-
-        // Await queryForAnswers here to ensure it's done before setting state
-        const results = await queryForAnswers();
-        //console.log("Fetched answers:", results)
-        
-        // Simulate loading states based on gameId
-        if (gameId === 'answer') {
-          setGameState('answer');
-        } else if (gameId === 'guess') {
-          setGameState('guess');
-          setAnswers(results.map(item => ({
-            id: item.id,
-            content: item.answer,
-          })));
-        } else if (gameId === 'results') {
-          setGameState('results');
-          setAnswers(results.map(item => ({
-            id: item.id,
-            content: item.answer,
-            user: item.username
-          })));
-          setResults({
-            correctGuesses: 2,
-            pointsEarned: 20
-          });
+        if (dailyQuestion) {
+          setPrompt(dailyQuestion);
+          
+          // Fetch answers for this question
+          const answersData = await fetchAnswersForQuestion(yesterdayQuestion);
+          if (!isMounted) return;
+          
+          // Process answers based on game state
+          processAnswers(answersData);
+          
+          // Set group members based on answers or defaults
+          setGroupMembers(
+            answersData.length > 0 
+              ? answersData.map(doc => ({
+                  id: doc.id,
+                  name: doc.username
+                }))
+              : [
+                  { id: '1', name: 'Alex' },
+                  { id: '2', name: 'Taylor' },
+                  { id: '3', name: 'Jordan' },
+                  { id: '4', name: 'Riley' },
+                ]
+          );
         } else {
-          setGameState('answer');
+          setError("No yesterday question available");
         }
       } catch (err) {
-        console.error("Error loading daily question:", err);
-        setError("Failed to load game data");
+        console.error("Error loading game data:", err);
+        if (isMounted) {
+          setError("Failed to load game data");
+        }
       }
     }
+    
+    loadGameData();
 
-    fetchGroupMembers();
-    loadDailyQuestion();
-
+    // Cleanup function
+    return () => {
+      isMounted = false;
+    };
   }, [gameId]);
 
+  // Function to fetch answers for a specific question
+  const fetchAnswersForQuestion = async (question) => {
+    try {
+      const answersCollectionRef = collection(db, 'answers');
+      const q = query(answersCollectionRef, where('question', '==', question));
+      const querySnapshot = await getDocs(q);
+      console.log("this is the question: " + question)
+      
+      if (querySnapshot.empty) {
+        console.warn("No matching answers found for:", question);
+        return [];
+      }
+  
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        username: doc.data().username,
+        answer: doc.data().answer
+      }));
+    } catch (err) {
+      console.error("Error executing Firestore query:", err);
+      return [];
+    }
+  };
+
+  // Process answers based on game state
+  const processAnswers = (answersData) => {
+    if (gameId === 'answer') {
+      setGameState('answer');
+    } else if (gameId === 'guess') {
+      setGameState('guess');
+      setAnswers(answersData.map(item => ({
+        id: item.id,
+        content: item.answer,
+      })));
+    } else if (gameId === 'results') {
+      setGameState('results');
+      setAnswers(answersData.map(item => ({
+        id: item.id,
+        content: item.answer,
+        user: item.username
+      })));
+      setResults({
+        correctGuesses: 2,
+        pointsEarned: 20
+      });
+    } else {
+      setGameState('answer');
+    }
+  };
   
   const handleAnswerSubmit = (answer) => {
-    console.log('Answer submitted:', answer);
+    //console.log('Answer submitted:', answer);
     
-    // Save to localStorage for demo purposes
     try {
       const gameData = JSON.parse(localStorage.getItem('gameData') || '{}');
       gameData[gameId] = {
@@ -152,7 +152,7 @@ const GamePage = () => {
   };
   
   const handleGuessesSubmit = (guesses) => {
-    console.log('Guesses submitted:', guesses);
+    //console.log('Guesses submitted:', guesses);
     
     try {
       // Save guesses to localStorage
