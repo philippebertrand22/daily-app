@@ -85,7 +85,7 @@ const GamePage = () => {
       const answersCollectionRef = collection(db, 'answers');
       const q = query(answersCollectionRef, where('question', '==', question));
       const querySnapshot = await getDocs(q);
-      console.log("this is the question: " + question)
+      //console.log("this is the question: " + question)
       
       if (querySnapshot.empty) {
         console.warn("No matching answers found for:", question);

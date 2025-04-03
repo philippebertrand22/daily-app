@@ -32,7 +32,7 @@ export async function getDailyQuestion() {
     
     // Return cached question if we already fetched one today in this session
     if (cachedDailyQuestion && cachedDate === dateString) {
-      console.log("Returning cached daily question");
+      //console.log("Returning cached daily question");
       return cachedDailyQuestion;
     }
 
@@ -53,7 +53,7 @@ export async function getDailyQuestion() {
       const existingQuestion = dailyQuestionSnapshot.docs[0].data();
       cachedDailyQuestion = existingQuestion.question;
       cachedDate = dateString;
-      console.log("Found existing daily question:", cachedDailyQuestion);
+      //console.log("Found existing daily question:", cachedDailyQuestion);
       return existingQuestion.question;
     }
 
@@ -78,7 +78,7 @@ export async function getYesterdayQuestion() {
     
     // Return cached yesterday's question if we already fetched it in this session
     if (cachedYesterdayQuestion && cachedYesterdayDate === dateString) {
-      console.log("Returning cached yesterday's question");
+      //console.log("Returning cached yesterday's question");
       return cachedYesterdayQuestion;
     }
 
@@ -99,7 +99,7 @@ export async function getYesterdayQuestion() {
       const existingQuestion = yesterdayQuestionSnapshot.docs[0].data();
       cachedYesterdayQuestion = existingQuestion.question;
       cachedYesterdayDate = dateString;
-      console.log("Found yesterday's question:", cachedYesterdayQuestion);
+      //console.log("Found yesterday's question:", cachedYesterdayQuestion);
       return existingQuestion.question;
     }
 

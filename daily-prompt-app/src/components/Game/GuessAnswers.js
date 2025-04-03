@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import '../../pages/GamePageStyles.css'; // Import custom CSS
 
 const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses }) => {
   const [guesses, setGuesses] = useState({});
@@ -58,6 +59,11 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses }) => {
                         guesses[answer.id] ? 'border-purple-300 bg-purple-50' : 'border-gray-200'
                       }`}
                     >
+                      <div>
+                        <span style = {{marginLeft:'15px', fontWeight:'bold'}} className="question-title">
+                          **create variable that would fetch yesterdays question**
+                        </span>
+                      </div>
                       <div className="mb-4">
                         <span style = {{marginLeft:'15px', fontWeight:'bold'}}>
                           Answer #{index + 1}

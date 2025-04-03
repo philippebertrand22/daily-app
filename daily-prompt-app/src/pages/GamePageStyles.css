@@ -185,3 +185,9 @@
     background: #fee2e2; /* red-100 */
     border-left: 4px solid #ef4444; /* red-500 */
   }
+
+  .question-title {
+    font-size: 1.15rem;
+    color: #000000;
+    margin-bottom: 1rem;
+  }
