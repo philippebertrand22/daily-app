@@ -58,6 +58,52 @@ const Results = ({ game = {}, answers = [], results = null }) => {
     );
   }
   
+  // Helper function to safely extract username from answer object
+  const getUsernameFromAnswer = (answer, index) => {
+    if (!answer) return `User ${index + 1}`;
+    
+    // Case 1: User is a string (username directly)
+    if (typeof answer.user === 'string') {
+      return answer.user;
+    }
+    
+    // Case 2: User is an object with username property
+    if (answer.user && typeof answer.user === 'object' && answer.user.username) {
+      return answer.user.username;
+    }
+    
+    // Case 3: Answer has username property directly
+    if (answer.username) {
+      return answer.username;
+    }
+    
+    // Default fallback
+    return `User ${index + 1}`;
+  };
+  
+  // Helper function to safely extract content from answer object
+  const getContentFromAnswer = (answer) => {
+    if (!answer) return "No answer provided";
+    
+    // Case 1: Content is directly on the answer object
+    if (typeof answer.content === 'string') {
+      return answer.content;
+    }
+    
+    // Case 2: Answer has text property instead
+    if (typeof answer.text === 'string') {
+      return answer.text;
+    }
+    
+    // Case 3: Answer has answer property 
+    if (typeof answer.answer === 'string') {
+      return answer.answer;
+    }
+    
+    // Default fallback
+    return "No answer provided";
+  };
+  
   return (
     <div className="results-container">
       <div className="results-card">
@@ -91,17 +137,8 @@ const Results = ({ game = {}, answers = [], results = null }) => {
           
           <div className="answers-container">
             {Array.isArray(answers) && answers.map((answer, index) => {
-              // Handle both possible data structures from GamePage
-              // Either username is directly in user field or nested in user object
-              let username;
-              if (typeof answer.user === 'string') {
-                username = answer.user;
-              } else if (answer.user && answer.user.username) {
-                username = answer.user.username;
-              } else {
-                username = `User ${index + 1}`;
-              }
-              
+              const username = getUsernameFromAnswer(answer, index);
+              const content = getContentFromAnswer(answer);
               const initial = (username?.charAt(0) || '?').toUpperCase();
               
               // Generate a consistent color based on the username
@@ -118,7 +155,7 @@ const Results = ({ game = {}, answers = [], results = null }) => {
                     
                     <div className="answer-details">
                       <p className="answer-username">{username}</p>
-                      <p className="answer-text">"{answer.content || "No answer provided"}"</p>
+                      <p className="answer-text">"{content}"</p>
                     </div>
                   </div>
                 </div>

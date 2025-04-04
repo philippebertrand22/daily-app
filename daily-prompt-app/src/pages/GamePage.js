@@ -85,7 +85,6 @@ const GamePage = () => {
       const answersCollectionRef = collection(db, 'answers');
       const q = query(answersCollectionRef, where('question', '==', question));
       const querySnapshot = await getDocs(q);
-      //console.log("this is the question: " + question)
       
       if (querySnapshot.empty) {
         console.warn("No matching answers found for:", question);
@@ -114,12 +113,19 @@ const GamePage = () => {
         content: item.answer,
       })));
     } else if (gameId === 'results') {
+      // For results, ensure we set the data structure that Results component expects
       setGameState('results');
+      
+      // Format answers in a way that's compatible with both original Results
+      // and our enhanced helper functions
       setAnswers(answersData.map(item => ({
         id: item.id,
-        content: item.answer,
-        user: item.username
+        content: item.answer, // The Results helper will look for content first
+        answer: item.answer,  // Fallback if content is not found
+        user: item.username,  // Use string username directly
+        username: item.username // Additional fallback for the Results helper
       })));
+      
       setResults({
         correctGuesses: 2,
         pointsEarned: 20
@@ -130,8 +136,6 @@ const GamePage = () => {
   };
   
   const handleAnswerSubmit = (answer) => {
-    //console.log('Answer submitted:', answer);
-    
     try {
       const gameData = JSON.parse(localStorage.getItem('gameData') || '{}');
       gameData[gameId] = {
@@ -144,7 +148,7 @@ const GamePage = () => {
       alert('Your answer has been submitted!');
       
       // Navigate to home
-      navigate('/home');
+      navigate('/game/guess');
     } catch (err) {
       console.error('Error saving answer:', err);
       alert('Failed to save your answer');
@@ -152,8 +156,6 @@ const GamePage = () => {
   };
   
   const handleGuessesSubmit = (guesses) => {
-    //console.log('Guesses submitted:', guesses);
-    
     try {
       // Save guesses to localStorage
       const guessData = JSON.parse(localStorage.getItem('guessData') || '{}');
@@ -166,15 +168,22 @@ const GamePage = () => {
       // Transition to results page for demo
       setGameState('results');
       
-      // Add user information to answers
+      // Add user information to answers in a format compatible with our
+      // improved helper functions in the Results component
       const answersWithUsers = answers.map(answer => {
         // Randomly pick a correct user for demo
         const randomIndex = Math.floor(Math.random() * groupMembers.length);
+        const username = groupMembers[randomIndex].name;
+        
         return {
           ...answer,
-          user: { username: groupMembers[randomIndex].name }
+          user: username, // Use string directly for user field
+          username: username, // Also add username directly to answer object as fallback
+          // Keep content as is, ensure answer field exists for the helper function
+          answer: answer.content
         };
       });
+      
       setAnswers(answersWithUsers);
       
       // Generate random results for demo
