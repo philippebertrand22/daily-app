@@ -212,3 +212,46 @@
     background: linear-gradient(90deg, #7c3aed 0%, #6d28d9 100%);
     transform: translateY(-2px);
   }
+
+  /* Add these to your existing ResultsStyles.css */
+
+.bonus-points {
+  color: #4caf50;
+  font-weight: 600;
+  display: block;
+  margin-top: 4px;
+}
+
+.total-points {
+  font-weight: 700;
+  margin-top: 8px;
+  color: #333;
+}
+
+.correct-guess {
+  color: #4caf50;
+  font-weight: 500;
+  margin-left: 6px;
+}
+
+.incorrect-guess {
+  color: #f44336;
+  font-style: italic;
+  margin-left: 6px;
+}
+
+.perfect-score-banner {
+  background-color: #e8f5e9;
+  border: 2px solid #4caf50;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 20px 0;
+  text-align: center;
+}
+
+.perfect-score-banner p {
+  color: #2e7d32;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin: 0;
+}

@@ -5,8 +5,9 @@ import AnswerPrompt from '../components/Game/AnswerPrompt';
 import GuessAnswers from '../components/Game/GuessAnswers';
 import Results from '../components/Game/Results';
 import './GamePageStyles.css';
-import { collection, getDocs, where, query } from 'firebase/firestore';
+import { collection, getDocs, where, query, doc, getDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
+import { getAuth } from 'firebase/auth';
 
 const GamePage = () => {
   const { gameId } = useParams();
@@ -17,49 +18,55 @@ const GamePage = () => {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
   const [groupMembers, setGroupMembers] = useState([]);
-  
-  // Fetch question and answers only once on component mount
+  const [correctGuesses, setCorrectGuesses] = useState(9999);
+  const [pointsEarned, setPointsEarned] = useState(9999);
+  const [perfectScore, setPerfectScore] = useState(false);
+  const [hasGuessedToday, setHasGuessedToday] = useState(false);
+  const [userId, setUserId] = useState(null);
+
   useEffect(() => {
     let isMounted = true;
-    
-    // Reset state when game ID changes
+
+    const auth = getAuth();
+    const currentUser = auth.currentUser;
+
+    if (currentUser) {
+      const uid = currentUser.uid;
+      setUserId(uid);
+    }
+
     setAnswers([]);
     setResults(null);
     setError(null);
 
     async function loadGameData() {
       try {
-        // Fetch the daily question first - only once
-        const dailyQuestion = await getDailyQuestion();
-        if (!isMounted) return;
-
         const yesterdayQuestion = await getYesterdayQuestion();
         if (!isMounted) return;
-        
+
         if (yesterdayQuestion) {
           setPrompt(yesterdayQuestion);
-          
-          // Fetch answers for this question
+
           const answersData = await fetchAnswersForQuestion(yesterdayQuestion);
           if (!isMounted) return;
-          
-          // Process answers based on game state
-          processAnswers(answersData);
-          
-          // Set group members based on answers or defaults
-          setGroupMembers(
-            answersData.length > 0 
-              ? answersData.map(doc => ({
-                  id: doc.id,
-                  name: doc.username
-                }))
-              : [
-                  { id: '1', name: 'Alex' },
-                  { id: '2', name: 'Taylor' },
-                  { id: '3', name: 'Jordan' },
-                  { id: '4', name: 'Riley' },
-                ]
-          );
+
+          if (answersData.length === 0) {
+            setGroupMembers([
+              { id: '1', name: 'Alex' },
+              { id: '2', name: 'Taylor' },
+              { id: '3', name: 'Jordan' },
+              { id: '4', name: 'Riley' },
+            ]);
+          } else {
+            const uniqueUsers = [...new Set(answersData.map(doc => doc.username))];
+            setGroupMembers(uniqueUsers.map((username, index) => ({
+              id: index.toString(),
+              name: username
+            })));
+          }
+
+          await checkGuessStatus();
+          setGameStateAndFormatAnswers(gameId, answersData);
         } else {
           setError("No yesterday question available");
         }
@@ -70,27 +77,43 @@ const GamePage = () => {
         }
       }
     }
-    
+
+    const checkGuessStatus = async () => {
+      if (!currentUser) return;
+
+      try {
+        const userRef = doc(db, 'users', currentUser.uid);
+        const userDoc = await getDoc(userRef);
+        const today = new Date().toISOString().split('T')[0];
+
+        if (userDoc.exists() && userDoc.data().lastGuessDate === today) {
+          setHasGuessedToday(true);
+        } else {
+          setHasGuessedToday(false);
+        }
+      } catch (err) {
+        console.error("Error checking guess status:", err);
+      }
+    };
+
     loadGameData();
 
-    // Cleanup function
     return () => {
       isMounted = false;
     };
   }, [gameId]);
 
-  // Function to fetch answers for a specific question
   const fetchAnswersForQuestion = async (question) => {
     try {
       const answersCollectionRef = collection(db, 'answers');
       const q = query(answersCollectionRef, where('question', '==', question));
       const querySnapshot = await getDocs(q);
-      
+
       if (querySnapshot.empty) {
         console.warn("No matching answers found for:", question);
         return [];
       }
-  
+
       return querySnapshot.docs.map(doc => ({
         id: doc.id,
         username: doc.data().username,
@@ -102,39 +125,44 @@ const GamePage = () => {
     }
   };
 
-  // Process answers based on game state
-  const processAnswers = (answersData) => {
-    if (gameId === 'answer') {
-      setGameState('answer');
-    } else if (gameId === 'guess') {
-      setGameState('guess');
-      setAnswers(answersData.map(item => ({
-        id: item.id,
-        content: item.answer,
-      })));
-    } else if (gameId === 'results') {
-      // For results, ensure we set the data structure that Results component expects
-      setGameState('results');
-      
-      // Format answers in a way that's compatible with both original Results
-      // and our enhanced helper functions
-      setAnswers(answersData.map(item => ({
-        id: item.id,
-        content: item.answer, // The Results helper will look for content first
-        answer: item.answer,  // Fallback if content is not found
-        user: item.username,  // Use string username directly
-        username: item.username // Additional fallback for the Results helper
-      })));
-      
-      setResults({
-        correctGuesses: 2,
-        pointsEarned: 20
-      });
-    } else {
-      setGameState('answer');
+  const setGameStateAndFormatAnswers = (state, answersData) => {
+    switch (state) {
+      case 'answer':
+        setGameState('answer');
+        break;
+
+      case 'guess':
+        setGameState('guess');
+        setAnswers(answersData.map(item => ({
+          id: item.id,
+          content: item.answer,
+          username: item.username || 'Anonymous'
+        })));
+        break;
+
+      case 'results':
+        setGameState('results');
+        setAnswers(answersData.map(item => ({
+          id: item.id,
+          content: item.answer,
+          username: item.username
+        })));
+        if (hasGuessedToday) {
+          setResults({
+            correctGuesses: correctGuesses || 9999,
+            pointsEarned: pointsEarned || 9999,
+            perfectScore: perfectScore || false
+          });
+        } else {
+          setResults(null);
+        }
+        break;
+
+      default:
+        setGameState('answer');
     }
   };
-  
+
   const handleAnswerSubmit = (answer) => {
     try {
       const gameData = JSON.parse(localStorage.getItem('gameData') || '{}');
@@ -143,63 +171,71 @@ const GamePage = () => {
         timestamp: new Date().toISOString()
       };
       localStorage.setItem('gameData', JSON.stringify(gameData));
-      
-      // Show success message
+
       alert('Your answer has been submitted!');
-      
-      // Navigate to home
-      navigate('/game/guess');
+      navigate(`/game/${gameId}/guess`);
     } catch (err) {
       console.error('Error saving answer:', err);
       alert('Failed to save your answer');
     }
   };
-  
-  const handleGuessesSubmit = (guesses) => {
+
+  const handleGuessesSubmit = async (guesses) => {
     try {
-      // Save guesses to localStorage
       const guessData = JSON.parse(localStorage.getItem('guessData') || '{}');
       guessData[gameId] = {
         guesses,
         timestamp: new Date().toISOString()
       };
       localStorage.setItem('guessData', JSON.stringify(guessData));
-      
-      // Transition to results page for demo
-      setGameState('results');
-      
-      // Add user information to answers in a format compatible with our
-      // improved helper functions in the Results component
+
+      setHasGuessedToday(true);
+
+      if (userId) {
+        const userRef = doc(db, 'users', userId);
+        await updateDoc(userRef, {
+          lastGuessDate: new Date().toISOString().split('T')[0]
+        });
+      }
+
       const answersWithUsers = answers.map(answer => {
-        // Randomly pick a correct user for demo
-        const randomIndex = Math.floor(Math.random() * groupMembers.length);
-        const username = groupMembers[randomIndex].name;
-        
+        const guessedUserId = guesses[answer.id];
+        const guessedUser = groupMembers.find(member => member.id === guessedUserId);
+
         return {
           ...answer,
-          user: username, // Use string directly for user field
-          username: username, // Also add username directly to answer object as fallback
-          // Keep content as is, ensure answer field exists for the helper function
-          answer: answer.content
+          guessedUsername: guessedUser ? guessedUser.name : 'Unknown User',
+          username: answer.username || 'Anonymous'
         };
       });
-      
+
       setAnswers(answersWithUsers);
-      
-      // Generate random results for demo
-      const correctCount = Math.floor(Math.random() * (answers.length + 1));
+      setGameState('results');
+
+      let correctCount = 0;
+      answersWithUsers.forEach(answer => {
+        if (answer.guessedUsername === answer.username) {
+          correctCount++;
+        }
+      });
+
+      let pointsEarned = correctCount * 10;
+      const allCorrect = correctCount === answersWithUsers.length && answersWithUsers.length > 0;
+      if (allCorrect) {
+        pointsEarned += 5;
+      }
+
       setResults({
         correctGuesses: correctCount,
-        pointsEarned: correctCount * 10
+        pointsEarned: pointsEarned,
+        perfectScore: allCorrect
       });
-      
     } catch (err) {
       console.error('Error processing guesses:', err);
       setError('Failed to process your guesses');
     }
   };
-  
-  // Loading state
+
   if (gameState === 'loading') {
     return (
       <div className="container">
@@ -210,8 +246,7 @@ const GamePage = () => {
       </div>
     );
   }
-  
-  // Error state
+
   if (error) {
     return (
       <div className="container">
@@ -219,37 +254,35 @@ const GamePage = () => {
         <div className="error-container">
           <p className="error-title">Error:</p>
           <p>{error}</p>
-          <button 
-            onClick={() => navigate('/home')}
-            className="home-button"
-          >
+          <button onClick={() => navigate('/home')} className="home-button">
             Return Home
           </button>
         </div>
       </div>
     );
   }
-  
+
   return (
     <div className="container">
       <h1 className="page-title">Daily Prompt</h1>
-      
+
       {gameState === 'answer' && (
         <AnswerPrompt 
           prompt={prompt}
           onAnswerSubmit={handleAnswerSubmit}
-          timeRemaining={3600} // 1 hour in seconds
+          timeRemaining={3600}
         />
       )}
-      
+
       {gameState === 'guess' && (
         <GuessAnswers 
           answers={answers}
           groupMembers={groupMembers}
           onSubmitGuesses={handleGuessesSubmit}
+          question={prompt}
         />
       )}
-      
+
       {gameState === 'results' && (
         <Results 
           game={{ prompt }}

@@ -1,18 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './ResultsStyles.css'; // Import custom CSS
+import './ResultsStyles.css';
 
 const Results = ({ game = {}, answers = [], results = null }) => {
   const navigate = useNavigate();
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Verify answers data when component mounts or answers change
-  useEffect(() => {
-    if (answers && answers.length > 0) {
-      console.log('Answers data:', answers);
-    }
-    setIsLoading(false);
-  }, [answers]);
+  const [isLoading, setIsLoading] = useState(false);
   
   // Show loading state
   if (isLoading) {
@@ -44,7 +36,6 @@ const Results = ({ game = {}, answers = [], results = null }) => {
               >
                 Back to Home
               </button>
-              
               <button 
                 onClick={() => navigate('/leaderboard')}
                 className="action-button purple-button"
@@ -57,52 +48,6 @@ const Results = ({ game = {}, answers = [], results = null }) => {
       </div>
     );
   }
-  
-  // Helper function to safely extract username from answer object
-  const getUsernameFromAnswer = (answer, index) => {
-    if (!answer) return `User ${index + 1}`;
-    
-    // Case 1: User is a string (username directly)
-    if (typeof answer.user === 'string') {
-      return answer.user;
-    }
-    
-    // Case 2: User is an object with username property
-    if (answer.user && typeof answer.user === 'object' && answer.user.username) {
-      return answer.user.username;
-    }
-    
-    // Case 3: Answer has username property directly
-    if (answer.username) {
-      return answer.username;
-    }
-    
-    // Default fallback
-    return `User ${index + 1}`;
-  };
-  
-  // Helper function to safely extract content from answer object
-  const getContentFromAnswer = (answer) => {
-    if (!answer) return "No answer provided";
-    
-    // Case 1: Content is directly on the answer object
-    if (typeof answer.content === 'string') {
-      return answer.content;
-    }
-    
-    // Case 2: Answer has text property instead
-    if (typeof answer.text === 'string') {
-      return answer.text;
-    }
-    
-    // Case 3: Answer has answer property 
-    if (typeof answer.answer === 'string') {
-      return answer.answer;
-    }
-    
-    // Default fallback
-    return "No answer provided";
-  };
   
   return (
     <div className="results-container">
@@ -127,7 +72,15 @@ const Results = ({ game = {}, answers = [], results = null }) => {
                 </div>
                 <div className="score-details">
                   <p className="score-label">Correct guesses</p>
-                  <p className="points-earned">+{results.pointsEarned || 0} points earned</p>
+                  <p className="points-earned">
+                    +{results.correctGuesses * 10} points from correct guesses
+                    {results.perfectScore && (
+                      <span className="bonus-points"> + 5 bonus points for perfect score!</span>
+                    )}
+                  </p>
+                  <p className="total-points">
+                    Total: +{results.pointsEarned || 0} points earned
+                  </p>
                 </div>
               </div>
             </div>
@@ -137,11 +90,18 @@ const Results = ({ game = {}, answers = [], results = null }) => {
           
           <div className="answers-container">
             {Array.isArray(answers) && answers.map((answer, index) => {
-              const username = getUsernameFromAnswer(answer, index);
-              const content = getContentFromAnswer(answer);
-              const initial = (username?.charAt(0) || '?').toUpperCase();
+              // Consistently get answer content from the content or answer property
+              const content = answer.content || answer.answer || "No answer provided";
               
-              // Generate a consistent color based on the username
+              // Get username, with guessedUsername showing what the user guessed
+              const username = answer.username || `User ${index + 1}`;
+              const wasGuessedCorrectly = answer.guessedUsername === username;
+              //console.log('Guessed Username:', answer.guessedUsername, 'Actual Username: ', username);
+              
+              // Get first letter for avatar
+              const initial = (username.charAt(0) || '?').toUpperCase();
+              
+              // Simple color selection based on username
               const colors = ['blue-avatar', 'purple-avatar', 'pink-avatar', 'yellow-avatar', 'green-avatar', 'indigo-avatar'];
               const colorIndex = username.charCodeAt(0) % colors.length;
               const avatarClass = colors[colorIndex];
@@ -152,9 +112,15 @@ const Results = ({ game = {}, answers = [], results = null }) => {
                     <div className={`avatar ${avatarClass}`}>
                       {initial}
                     </div>
-                    
                     <div className="answer-details">
-                      <p className="answer-username">{username}</p>
+                      <p className="answer-username">
+                        {username}
+                        {answer.guessedUsername && (
+                          <span className={`guess-result ${wasGuessedCorrectly ? 'correct-guess' : 'incorrect-guess'}`}>
+                            {wasGuessedCorrectly ? '(+10 points)' : ` (Your guess: ${answer.guessedUsername})`}
+                          </span>
+                        )}
+                      </p>
                       <p className="answer-text">"{content}"</p>
                     </div>
                   </div>
@@ -169,6 +135,12 @@ const Results = ({ game = {}, answers = [], results = null }) => {
             )}
           </div>
           
+          {results && results.perfectScore && (
+            <div className="perfect-score-banner">
+              <p>Perfect Score! +5 bonus points</p>
+            </div>
+          )}
+          
           <div className="button-container">
             <button 
               onClick={() => navigate('/home')}
@@ -176,7 +148,6 @@ const Results = ({ game = {}, answers = [], results = null }) => {
             >
               Back to Home
             </button>
-            
             <button 
               onClick={() => navigate('/leaderboard')}
               className="action-button purple-button"
