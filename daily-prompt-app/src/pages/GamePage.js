@@ -13,7 +13,8 @@ const GamePage = () => {
   const { gameId } = useParams();
   const navigate = useNavigate();
   const [gameState, setGameState] = useState('loading');
-  const [prompt, setPrompt] = useState("");
+  const [dailyPrompt, setDailyPrompt] = useState("");
+  const [yesterdayPrompt, setYesterdayPrompt] = useState("");
   const [answers, setAnswers] = useState([]);
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
@@ -44,8 +45,16 @@ const GamePage = () => {
         const yesterdayQuestion = await getYesterdayQuestion();
         if (!isMounted) return;
 
+        const dailyQuestion = await getDailyQuestion();
+        if (!isMounted) return;
+
+        if (dailyQuestion) {
+          setDailyPrompt(dailyQuestion);
+        }
+
         if (yesterdayQuestion) {
-          setPrompt(yesterdayQuestion);
+
+          setYesterdayPrompt(yesterdayQuestion);
 
           const answersData = await fetchAnswersForQuestion(yesterdayQuestion);
           if (!isMounted) return;
@@ -268,7 +277,7 @@ const GamePage = () => {
 
       {gameState === 'answer' && (
         <AnswerPrompt 
-          prompt={prompt}
+          prompt={dailyPrompt}
           onAnswerSubmit={handleAnswerSubmit}
           timeRemaining={3600}
         />
@@ -279,13 +288,13 @@ const GamePage = () => {
           answers={answers}
           groupMembers={groupMembers}
           onSubmitGuesses={handleGuessesSubmit}
-          question={prompt}
+          question={yesterdayPrompt}
         />
       )}
 
       {gameState === 'results' && (
         <Results 
-          game={{ prompt }}
+          game={yesterdayPrompt}
           answers={answers}
           results={results}
         />
