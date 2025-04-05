@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './ResultsStyles.css';
 
-const Results = ({ game = {}, answers = [], results = null, hasGuessedToday = {} }) => {
+const Results = ({ game = {}, answers = [], results = null, hasGuessedToday = false }) => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   console.log(hasGuessedToday)
@@ -86,7 +86,7 @@ const Results = ({ game = {}, answers = [], results = null, hasGuessedToday = {}
             </div>
           )}
         {hasGuessedToday && (
-          <>  
+          <div>  
             <h3 className="answers-heading">All Answers:</h3>
             
             <div className="answers-container">
@@ -135,7 +135,7 @@ const Results = ({ game = {}, answers = [], results = null, hasGuessedToday = {}
                 </div>
               )}
             </div>
-          </>
+          </div>
         )}
           
           {results && results.perfectScore && (
