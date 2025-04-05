@@ -1,12 +1,66 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { auth, db } from '../../firebaseConfig';
+import { 
+  doc, 
+  setDoc, 
+  collection, 
+  getDocs,
+  getDoc,
+  query,
+  where,
+  serverTimestamp
+} from 'firebase/firestore';
 import '../../pages/GamePageStyles.css';
 
-const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses, question = "Yesterday's Question" }) => {
+const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses, question = "Yesterday's Question", questionId }) => {
   const [guesses, setGuesses] = useState({});
   const [error, setError] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [canSubmit, setCanSubmit] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
+  
   const navigate = useNavigate();
+
+  // Check if user has already submitted guesses for this question
+  useEffect(() => {
+    const checkDailySubmission = async () => {
+      if (!questionId || !auth.currentUser) {
+        console.log("Can't check submission: missing questionId or user");
+        setIsLoading(false);
+        return;
+      }
+      
+      try {
+        const guessesRef = collection(db, 'guesses');
+        
+        const q = query(
+          guessesRef,
+          where('userId', '==', auth.currentUser.uid),
+          where('questionId', '==', questionId)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        console.log(`Found ${querySnapshot.size} previous guesses from this user for this question`);
+        
+        if (!querySnapshot.empty) {
+          setCanSubmit(false);
+          setError('You have already submitted guesses for this question');
+        } else {
+          console.log("User can submit - no previous guesses found");
+          setCanSubmit(true);
+        }
+      } catch (error) {
+        console.error('Submission check error:', error);
+        setError(`Error checking submission eligibility: ${error.message}`);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    setIsLoading(true);
+    checkDailySubmission();
+  }, [questionId]);
 
   const handleSelectUser = (answerId, userId) => {
     setGuesses(prevGuesses => ({
@@ -27,20 +81,70 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses, questi
       setError('Please match all answers to users');
       return;
     }
+    
+    if (!canSubmit) {
+      setError('You have already submitted guesses for this question');
+      return;
+    }
+    
+    if (!auth.currentUser) {
+      setError('You must be logged in');
+      return;
+    }
 
     setSubmitting(true);
     setError('');
 
     try {
-      // Pass the complete guesses object to the parent component
-      await onSubmitGuesses(guesses);
+      // First fetch the user's data to get the username
+      const userRef = doc(db, 'users', auth.currentUser.uid);
+      const userSnap = await getDoc(userRef);
+      
+      let username = 'Anonymous';
+      if (userSnap.exists()) {
+        username = userSnap.data()?.profile?.username || 'Anonymous';
+        console.log('Username:', username);
+      }
+      
+      // Create a new document in the guesses collection
+      const guessesCollectionRef = collection(db, 'guesses');
+      const newGuessRef = doc(guessesCollectionRef); // Auto-generate ID
+      
+      // Format the guess data for storage
+      const guessData = {
+        userId: auth.currentUser.uid,
+        username: username,
+        questionId: questionId,
+        question: question,
+        guesses: guesses, // Store the guesses object with answerId -> userId mapping
+        createdAt: serverTimestamp(),
+        correctCount: 0, // This can be calculated later or updated after submission
+      };
+      //console.log('Guess data:', guessData);
+      //console.log('newGuessRef', newGuessRef);
+      
+      await setDoc(newGuessRef, guessData);
+      console.log('Guesses saved with ID:', newGuessRef.id);
+      
+      // Call the parent component's onSubmitGuesses if it exists
+      if (onSubmitGuesses) {
+        await onSubmitGuesses(guesses, newGuessRef.id);
+      }
+      
+      // Navigate back to home or to a results page
+      navigate('/game/results');
     } catch (err) {
       console.error('Failed to submit guesses:', err);
-      setError('Failed to submit guesses');
+      setError(`Failed to submit guesses: ${err.message}`);
     } finally {
       setSubmitting(false);
     }
   };
+
+  // Loading state
+  if (isLoading) {
+    return <div>Checking submission eligibility...</div>;
+  }
 
   return (
     <div className="game-card">
@@ -54,6 +158,23 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses, questi
             {question}
           </span>
         </div>
+        
+        {error && (
+          <div 
+            className="error-message" 
+            style={{ 
+              color: 'red', 
+              marginBottom: '10px',
+              padding: '10px',
+              backgroundColor: '#ffeeee',
+              borderRadius: '4px',
+              margin: '15px'
+            }}
+          >
+            {error}
+          </div>
+        )}
+        
         <form onSubmit={handleSubmit}>
           {answers.length > 0 ? (
             <div style={{ marginTop: '10px' }}>
@@ -81,7 +202,7 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses, questi
                       }`}
                       value={guesses[answer.id] || ''}
                       onChange={(e) => handleSelectUser(answer.id, e.target.value)}
-                      disabled={submitting}
+                      disabled={submitting || !canSubmit}
                     >
                       <option value="">-- Select a friend --</option>
                       {groupMembers.map((member) => (
@@ -110,21 +231,19 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses, questi
             </div>
           )}
 
-          {error && <div className="error-message">⚠️ {error}</div>}
-
           {answers.length > 0 && (
             <button
               style={{ margin: '15px' }}
               type="submit"
               disabled={
                 submitting || 
+                !canSubmit ||
                 Object.keys(guesses).length !== answers.length || 
                 Object.values(guesses).includes('')
               }
-              //onClick={() => navigate('/home')}
               className="submit-button"
             >
-              {submitting ? 'Submitting...' : 'Submit Guesses'}
+              {submitting ? 'Submitting...' : canSubmit ? 'Submit Guesses' : 'Already Submitted'}
             </button>
           )}
 

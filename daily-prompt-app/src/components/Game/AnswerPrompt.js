@@ -214,7 +214,7 @@ const AnswerPrompt = () => {
       });
       
       // Navigate to home or success page
-      navigate('/home');
+      navigate('/game/guess');
     } catch (error) {
       console.error('Submission error:', error);
       setError(`Submission failed: ${error.message}`);

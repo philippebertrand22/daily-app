@@ -289,6 +289,7 @@ const GamePage = () => {
           groupMembers={groupMembers}
           onSubmitGuesses={handleGuessesSubmit}
           question={yesterdayPrompt}
+          questionId={yesterdayPrompt.id || yesterdayPrompt}
         />
       )}
 
@@ -297,6 +298,7 @@ const GamePage = () => {
           game={yesterdayPrompt}
           answers={answers}
           results={results}
+          hasGuessedToday={hasGuessedToday}
         />
       )}
     </div>
