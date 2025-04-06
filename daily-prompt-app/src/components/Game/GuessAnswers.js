@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { auth, db } from '../../firebaseConfig';
 import { 
@@ -21,6 +21,15 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses, questi
   const [isLoading, setIsLoading] = useState(true);
   
   const navigate = useNavigate();
+
+  // Create randomized member lists for each answer
+  const randomizedMemberLists = useMemo(() => {
+    return answers.map(() => {
+      // Create a copy of the groupMembers array and shuffle it
+      const shuffled = [...groupMembers].sort(() => Math.random() - 0.5);
+      return shuffled;
+    });
+  }, [answers, groupMembers]);
 
   // Check if user has already submitted guesses for this question
   useEffect(() => {
@@ -120,8 +129,6 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses, questi
         createdAt: serverTimestamp(),
         correctCount: 0, // This can be calculated later or updated after submission
       };
-      //console.log('Guess data:', guessData);
-      //console.log('newGuessRef', newGuessRef);
       
       await setDoc(newGuessRef, guessData);
       console.log('Guesses saved with ID:', newGuessRef.id);
@@ -205,7 +212,8 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses, questi
                       disabled={submitting || !canSubmit}
                     >
                       <option value="">-- Select a friend --</option>
-                      {groupMembers.map((member) => (
+                      {/* Use the randomized list specific to this answer */}
+                      {randomizedMemberLists[index].map((member) => (
                         <option 
                           key={member.id}
                           value={member.id}
