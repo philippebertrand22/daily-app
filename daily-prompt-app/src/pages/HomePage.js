@@ -40,7 +40,7 @@ const HomePage = () => {
     <div className="home-container">
       <div className="home-content">
         <div className="app-title-container">
-          <h1 className="app-title">Daily Prompt</h1>
+          <h1 className="app-title">BroReal</h1>
           <p className="app-subtitle">Connect with friends through daily challenges</p>
         </div>
         
