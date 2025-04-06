@@ -5,7 +5,7 @@ import AnswerPrompt from '../components/Game/AnswerPrompt';
 import GuessAnswers from '../components/Game/GuessAnswers';
 import Results from '../components/Game/Results';
 import './GamePageStyles.css';
-import { collection, getDocs, where, query, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { collection, getDocs, where, query, doc, getDoc, updateDoc, setDoc } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
 import { getAuth } from 'firebase/auth';
 
@@ -19,11 +19,12 @@ const GamePage = () => {
   const [results, setResults] = useState(null);
   const [error, setError] = useState(null);
   const [groupMembers, setGroupMembers] = useState([]);
-  const [correctGuesses, setCorrectGuesses] = useState(9999);
-  const [pointsEarned, setPointsEarned] = useState(9999);
+  const [correctGuesses, setCorrectGuesses] = useState(0);
+  const [pointsEarned, setPointsEarned] = useState(0);
   const [perfectScore, setPerfectScore] = useState(false);
   const [hasGuessedToday, setHasGuessedToday] = useState(false);
   const [userId, setUserId] = useState(null);
+  const [userScoreData, setUserScoreData] = useState(null);
 
   useEffect(() => {
     let isMounted = true;
@@ -53,7 +54,6 @@ const GamePage = () => {
         }
 
         if (yesterdayQuestion) {
-
           setYesterdayPrompt(yesterdayQuestion);
 
           const answersData = await fetchAnswersForQuestion(yesterdayQuestion);
@@ -74,7 +74,7 @@ const GamePage = () => {
             })));
           }
 
-          await checkGuessStatus();
+          await checkGuessStatus(yesterdayQuestion);
           setGameStateAndFormatAnswers(gameId, answersData);
         } else {
           setError("No yesterday question available");
@@ -87,16 +87,41 @@ const GamePage = () => {
       }
     }
 
-    const checkGuessStatus = async () => {
+    const checkGuessStatus = async (questionId) => {
       if (!currentUser) return;
 
       try {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
         const today = new Date().toISOString().split('T')[0];
-
-        if (userDoc.exists() && userDoc.data().lastGuessDate === today) {
-          setHasGuessedToday(true);
+        
+        if (userDoc.exists()) {
+          // Check if user has guessed today
+          if (userDoc.data().lastGuessDate === today) {
+            setHasGuessedToday(true);
+          } else {
+            setHasGuessedToday(false);
+          }
+          
+          // Check for saved score data for this question
+          const scoresRef = collection(db, 'userScores');
+          const q = query(
+            scoresRef, 
+            where('userId', '==', currentUser.uid),
+            where('questionId', '==', questionId)
+          );
+          
+          const scoreSnapshot = await getDocs(q);
+          
+          if (!scoreSnapshot.empty) {
+            const scoreData = scoreSnapshot.docs[0].data();
+            setResults({
+              correctGuesses: scoreData.correctGuesses,
+              pointsEarned: scoreData.pointsEarned,
+              perfectScore: scoreData.perfectScore
+            });
+            setUserScoreData(scoreData);
+          }
         } else {
           setHasGuessedToday(false);
         }
@@ -151,20 +176,22 @@ const GamePage = () => {
 
       case 'results':
         setGameState('results');
-        setAnswers(answersData.map(item => ({
+        const formattedAnswers = answersData.map(item => ({
           id: item.id,
           content: item.answer,
           username: item.username
-        })));
-        if (hasGuessedToday) {
-          setResults({
-            correctGuesses: correctGuesses || 9999,
-            pointsEarned: pointsEarned || 9999,
-            perfectScore: perfectScore || false
+        }));
+        
+        // If we have user score data, add guessed usernames to answers
+        if (userScoreData && userScoreData.guesses) {
+          formattedAnswers.forEach(answer => {
+            const guessedUserId = userScoreData.guesses[answer.id];
+            const guessedUser = groupMembers.find(member => member.id === guessedUserId);
+            answer.guessedUsername = guessedUser ? guessedUser.name : 'Unknown User';
           });
-        } else {
-          setResults(null);
         }
+        
+        setAnswers(formattedAnswers);
         break;
 
       default:
@@ -201,6 +228,7 @@ const GamePage = () => {
       setHasGuessedToday(true);
 
       if (userId) {
+        // Update the last guess date in the user document
         const userRef = doc(db, 'users', userId);
         await updateDoc(userRef, {
           lastGuessDate: new Date().toISOString().split('T')[0]
@@ -233,12 +261,42 @@ const GamePage = () => {
       if (allCorrect) {
         pointsEarned += 5;
       }
-
-      setResults({
+      
+      const resultsData = {
         correctGuesses: correctCount,
         pointsEarned: pointsEarned,
         perfectScore: allCorrect
-      });
+      };
+
+      setResults(resultsData);
+      
+      // Save score data to Firestore
+      if (userId) {
+        const scoreData = {
+          userId: userId,
+          questionId: yesterdayPrompt,
+          guesses: guesses,
+          correctGuesses: correctCount,
+          pointsEarned: pointsEarned,
+          perfectScore: allCorrect,
+          timestamp: new Date().toISOString()
+        };
+        
+        // Save to the userScores collection
+        const scoreRef = doc(collection(db, 'userScores'));
+        await setDoc(scoreRef, scoreData);
+        
+        // Also update the user's total points
+        const userRef = doc(db, 'users', userId);
+        const userDoc = await getDoc(userRef);
+        
+        if (userDoc.exists()) {
+          const currentPoints = userDoc.data().points || 0;
+          await updateDoc(userRef, {
+            points: currentPoints + pointsEarned
+          });
+        }
+      }
     } catch (err) {
       console.error('Error processing guesses:', err);
       setError('Failed to process your guesses');

@@ -5,7 +5,7 @@ import './ResultsStyles.css';
 const Results = ({ game = {}, answers = [], results = null, hasGuessedToday = false }) => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
-  console.log(hasGuessedToday)
+  
   // Show loading state
   if (isLoading) {
     return (
@@ -85,62 +85,72 @@ const Results = ({ game = {}, answers = [], results = null, hasGuessedToday = fa
               </div>
             </div>
           )}
-        {hasGuessedToday && (
-          <div>  
-            <h3 className="answers-heading">All Answers:</h3>
-            
-            <div className="answers-container">
-              {Array.isArray(answers) && answers.map((answer, index) => {
-                // Consistently get answer content from the content or answer property
-                const content = answer.content || answer.answer || "No answer provided";
-                
-                // Get username, with guessedUsername showing what the user guessed
-                const username = answer.username || `User ${index + 1}`;
-                const wasGuessedCorrectly = answer.guessedUsername === username;
-                //console.log('Guessed Username:', answer.guessedUsername, 'Actual Username: ', username);
-                
-                // Get first letter for avatar
-                const initial = (username.charAt(0) || '?').toUpperCase();
-                
-                // Simple color selection based on username
-                const colors = ['blue-avatar', 'purple-avatar', 'pink-avatar', 'yellow-avatar', 'green-avatar', 'indigo-avatar'];
-                const colorIndex = username.charCodeAt(0) % colors.length;
-                const avatarClass = colors[colorIndex];
-                
-                return (
-                  <div key={index} className="answer-card">
-                    <div className="answer-content">
-                      <div className={`avatar ${avatarClass}`}>
-                        {initial}
-                      </div>
-                      <div className="answer-details">
-                        <p className="answer-username">
-                          {username}
-                          {answer.guessedUsername && (
-                            <span className={`guess-result ${wasGuessedCorrectly ? 'correct-guess' : 'incorrect-guess'}`}>
-                              {wasGuessedCorrectly ? '(+10 points)' : ` (Your guess: ${answer.guessedUsername})`}
-                            </span>
-                          )}
-                        </p>
-                        <p className="answer-text">"{content}"</p>
+          
+          {hasGuessedToday ? (
+            <div>  
+              <h3 className="answers-heading">All Answers:</h3>
+              
+              <div className="answers-container">
+                {Array.isArray(answers) && answers.map((answer, index) => {
+                  // Consistently get answer content from the content or answer property
+                  const content = answer.content || answer.answer || "No answer provided";
+                  
+                  // Get username, with guessedUsername showing what the user guessed
+                  const username = answer.username || `User ${index + 1}`;
+                  const wasGuessedCorrectly = answer.guessedUsername === username;
+                  
+                  // Get first letter for avatar
+                  const initial = (username.charAt(0) || '?').toUpperCase();
+                  
+                  // Simple color selection based on username
+                  const colors = ['blue-avatar', 'purple-avatar', 'pink-avatar', 'yellow-avatar', 'green-avatar', 'indigo-avatar'];
+                  const colorIndex = username.charCodeAt(0) % colors.length;
+                  const avatarClass = colors[colorIndex];
+                  
+                  return (
+                    <div key={index} className="answer-card">
+                      <div className="answer-content">
+                        <div className={`avatar ${avatarClass}`}>
+                          {initial}
+                        </div>
+                        <div className="answer-details">
+                          <p className="answer-username">
+                            {username}
+                            {answer.guessedUsername && (
+                              <span className={`guess-result ${wasGuessedCorrectly ? 'correct-guess' : 'incorrect-guess'}`}>
+                                {wasGuessedCorrectly ? '(+10 points)' : ` (Your guess: ${answer.guessedUsername})`}
+                              </span>
+                            )}
+                          </p>
+                          <p className="answer-text">"{content}"</p>
+                        </div>
                       </div>
                     </div>
+                  );
+                })}
+                
+                {(!Array.isArray(answers) || answers.length === 0) && (
+                  <div className="empty-answers">
+                    <p>No answers available for this game.</p>
                   </div>
-                );
-              })}
+                )}
+              </div>
               
-              {(!Array.isArray(answers) || answers.length === 0) && (
-                <div className="empty-answers">
-                  <p>No answers available for this game.</p>
+              {results && results.perfectScore && (
+                <div className="perfect-score-banner">
+                  <p>Perfect Score! +5 bonus points</p>
                 </div>
               )}
             </div>
-          </div>
-        )}
-          
-          {results && results.perfectScore && (
-            <div className="perfect-score-banner">
-              <p>Perfect Score! +5 bonus points</p>
+          ) : (
+            <div style = {{marginTop:'10px', marginBottom:'10px' }} className="answers-hidden-message">
+              <p>Submit your guesses to see all answers and reveal your score!</p>
+              <button 
+                onClick={() => navigate('/game/guess')}
+                className="action-button blue-button"
+              >
+                Make Your Guesses
+              </button>
             </div>
           )}
           
