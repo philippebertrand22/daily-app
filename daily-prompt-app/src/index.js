@@ -5,6 +5,7 @@ import App from './App';
 
 import {db} from './firebaseConfig'; // Import your Firebase configuration
 import { questions } from './questions'; // Import your questions array
+import { createESTTimestamp } from './components/utils/estTimestamp';
 
 import { collection, addDoc, serverTimestamp, writeBatch, doc } from 'firebase/firestore';
 
@@ -27,7 +28,7 @@ async function insertQuestions() {
                 question_number: index + 1,
                 category: 'Jackbox-style',
                 status: 'unprocessed',
-                created_at: serverTimestamp()
+                created_at: createESTTimestamp()
             };
             
             // Add to batch

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {createESTTimestamp} from '../utils/estTimestamp';
 import { auth, db } from '../../firebaseConfig';
 import { 
   doc, 
@@ -126,7 +127,7 @@ const GuessAnswers = ({ answers = [], groupMembers = [], onSubmitGuesses, questi
         questionId: questionId,
         question: question,
         guesses: guesses, // Store the guesses object with answerId -> userId mapping
-        createdAt: serverTimestamp(),
+        createdAt: createESTTimestamp(),
         correctCount: 0, // This can be calculated later or updated after submission
       };
       

@@ -14,7 +14,7 @@ const HomePage = () => {
     const answers = Object.entries(gameData).map(([gameId, data]) => ({
       gameId,
       answer: data.answer,
-      timestamp: new Date(data.timestamp).toLocaleString()
+      timestamp: new Date(data.timestamp).toLocaleString('en-US', { timeZone: 'America/New_York' })
     }));
     setSavedAnswers(answers);
   }, []);

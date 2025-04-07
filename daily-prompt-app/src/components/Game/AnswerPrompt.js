@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {createESTTimestamp} from '../utils/estTimestamp';
 import { auth, db } from '../../firebaseConfig';
 import { 
   doc, 
@@ -194,7 +195,7 @@ const AnswerPrompt = () => {
         answer: trimmedAnswer,
         questionId: question.id,
         question: question.question,
-        createdAt: serverTimestamp(),
+        createdAt: createESTTimestamp(),
         username: username || 'Anonymous'
       });
       
@@ -210,7 +211,7 @@ const AnswerPrompt = () => {
       await setDoc(questionAnswerRef, {
         userId: auth.currentUser.uid,
         answerId: newAnswerRef.id,
-        createdAt: serverTimestamp()
+        createdAt: createESTTimestamp()
       });
       
       // Navigate to home or success page
