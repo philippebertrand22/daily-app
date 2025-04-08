@@ -218,44 +218,25 @@ const GamePage = () => {
 
   const handleGuessesSubmit = async (guesses) => {
     try {
-      const guessData = JSON.parse(localStorage.getItem('guessData') || '{}');
-      guessData[gameId] = {
-        guesses,
-        timestamp: new Date().toLocaleString('en-CA', { timeZone: 'America/New_York' })
-      };
-      localStorage.setItem('guessData', JSON.stringify(guessData));
-
-      setHasGuessedToday(true);
-
-      if (userId) {
-        // Update the last guess date in the user document
-        const userRef = doc(db, 'users', userId);
-        await updateDoc(userRef, {
-          lastGuessDate: new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
-        });
-      }
-
+      // Calculate results first
       const answersWithUsers = answers.map(answer => {
         const guessedUserId = guesses[answer.id];
         const guessedUser = groupMembers.find(member => member.id === guessedUserId);
-
+  
         return {
           ...answer,
           guessedUsername: guessedUser ? guessedUser.name : 'Unknown User',
           username: answer.username || 'Anonymous'
         };
       });
-
-      setAnswers(answersWithUsers);
-      setGameState('results');
-
+  
       let correctCount = 0;
       answersWithUsers.forEach(answer => {
         if (answer.guessedUsername === answer.username) {
           correctCount++;
         }
       });
-
+  
       let pointsEarned = correctCount * 10;
       const allCorrect = correctCount === answersWithUsers.length && answersWithUsers.length > 0;
       if (allCorrect) {
@@ -267,10 +248,8 @@ const GamePage = () => {
         pointsEarned: pointsEarned,
         perfectScore: allCorrect
       };
-
-      setResults(resultsData);
-      
-      // Save score data to Firestore
+  
+      // First save to Firestore if user is logged in
       if (userId) {
         const scoreData = {
           userId: userId,
@@ -296,10 +275,30 @@ const GamePage = () => {
             points: currentPoints + pointsEarned
           });
         }
+        
+        // Update the last guess date in the user document
+        await updateDoc(userRef, {
+          lastGuessDate: new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
+        });
       }
+  
+      // Only after Firestore operations succeed, update localStorage and state
+      const guessData = JSON.parse(localStorage.getItem('guessData') || '{}');
+      guessData[gameId] = {
+        guesses,
+        timestamp: new Date().toLocaleString('en-CA', { timeZone: 'America/New_York' })
+      };
+      localStorage.setItem('guessData', JSON.stringify(guessData));
+  
+      setHasGuessedToday(true);
+      setAnswers(answersWithUsers);
+      setGameState('results');
+      setResults(resultsData);
+  
     } catch (err) {
       console.error('Error processing guesses:', err);
-      setError('Failed to process your guesses');
+      setError('Failed to process your guesses. Please try again.');
+      // Optionally add retry logic here
     }
   };
 
