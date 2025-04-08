@@ -93,7 +93,7 @@ const GamePage = () => {
       try {
         const userRef = doc(db, 'users', currentUser.uid);
         const userDoc = await getDoc(userRef);
-        const today = new Date().toISOString().split('T')[0];
+        const today = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
         
         if (userDoc.exists()) {
           // Check if user has guessed today
@@ -204,7 +204,7 @@ const GamePage = () => {
       const gameData = JSON.parse(localStorage.getItem('gameData') || '{}');
       gameData[gameId] = {
         answer,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toLocaleString('en-CA', { timeZone: 'America/New_York' })
       };
       localStorage.setItem('gameData', JSON.stringify(gameData));
 
@@ -221,7 +221,7 @@ const GamePage = () => {
       const guessData = JSON.parse(localStorage.getItem('guessData') || '{}');
       guessData[gameId] = {
         guesses,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toLocaleString('en-CA', { timeZone: 'America/New_York' })
       };
       localStorage.setItem('guessData', JSON.stringify(guessData));
 
@@ -231,7 +231,7 @@ const GamePage = () => {
         // Update the last guess date in the user document
         const userRef = doc(db, 'users', userId);
         await updateDoc(userRef, {
-          lastGuessDate: new Date().toISOString().split('T')[0]
+          lastGuessDate: new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' })
         });
       }
 
@@ -279,7 +279,7 @@ const GamePage = () => {
           correctGuesses: correctCount,
           pointsEarned: pointsEarned,
           perfectScore: allCorrect,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toLocaleString('en-CA', { timeZone: 'America/New_York' })
         };
         
         // Save to the userScores collection

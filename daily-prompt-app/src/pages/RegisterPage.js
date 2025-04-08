@@ -42,7 +42,7 @@ function RegisterPage() {
       // Create a user document in Firestore
       await setDoc(doc(db, 'users', user.uid), {
         email: user.email,
-        createdAt: new Date().toISOString(),
+        createdAt: new Date().toLocaleString("en-US", { timeZone: "America/New_York" }),
         profile: {
           username: username
         }

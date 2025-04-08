@@ -7,21 +7,20 @@ let cachedDate = null;
 let cachedYesterdayQuestion = null;
 let cachedYesterdayDate = null;
 
-// Helper function to get a date string for a specific date
 function getDateString(date) {
-  return date.toISOString().split('T')[0];
+  console.log("Date: ", date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' }))
+  return date.toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
 }
 
-// Function to get today's date string
 function getTodayDateString() {
   return getDateString(new Date());
 }
 
-// Function to get yesterday's date string
 function getYesterdayDateString() {
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  return getDateString(yesterday);
+  const date = new Date();
+  // Move to yesterday in Eastern Time
+  date.setDate(date.getDate() - 1);
+  return getDateString(date);
 }
 
 // Function to get a unique daily question
@@ -155,7 +154,7 @@ async function selectAndSaveDailyQuestion(dateString) {
       date: dateString,
       question: randomQuestion.question_text,
       question_id: randomQuestion.id,
-      selected_at: new Date().toISOString()
+      selected_at: new Date().toLocaleString("en-US", { timeZone: "America/New_York" })
     };
 
     // Add to daily_questions collection with known ID
