@@ -1,18 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import {createESTTimestamp} from '../utils/estTimestamp';
+import { createESTTimestamp } from '../utils/estTimestamp';
 import { auth, db } from '../../firebaseConfig';
+import { getDailyQuestion } from './questionFetcher';
 import { 
   doc, 
   setDoc, 
-  serverTimestamp, 
-  query, 
   collection, 
   where, 
   getDocs,
   getDoc,
   orderBy,
-  limit
+  limit,
+  query
 } from 'firebase/firestore';
 
 const AnswerPrompt = () => {
@@ -29,56 +29,39 @@ const AnswerPrompt = () => {
   const fetchLatestQuestion = useCallback(async () => {
     setIsLoading(true);
     try {
-      // First, let's try to get ALL questions to see if there's data
-      const questionsRef = collection(db, 'daily_questions');
+      // First, get the question text from the questionFetcher
+      const questionText = await getDailyQuestion();
       
-      // Original query with logging
-      const q = query(
-        questionsRef, 
-        orderBy('selected_at', 'desc'),
-        limit(1)
-      );
-
-      const querySnapshot = await getDocs(q);
-      
-      if (!querySnapshot.empty) {
-        const latestQuestion = querySnapshot.docs[0].data();
-        const questionId = querySnapshot.docs[0].id;
+      if (questionText) {
+        // Then, fetch the document from Firestore to get the ID
+        const questionsRef = collection(db, 'daily_questions');
+        const dateString = new Date().toLocaleDateString('en-CA', { timeZone: 'America/New_York' });
+        const dailyQuestionId = `daily_${dateString}`;
         
-        //console.log('Found latest question:', latestQuestion);
+        // Get the document by ID
+        const questionDoc = await getDoc(doc(questionsRef, dailyQuestionId));
         
-        // Set the question and its ID
-        setQuestion({
-          ...latestQuestion,
-          id: questionId
-        });
-        
-        // Reset error if previously set
-        setError('');
-        setCanSubmit(true);
-      } else {
-        // Fallback: get all questions without ordering
-        const debugSnapshot = await getDocs(questionsRef);
-        
-        if (debugSnapshot.size > 0) {
-          // Use the first document as fallback
-          const doc = debugSnapshot.docs[0];
+        if (questionDoc.exists()) {
+          // Set the question with its ID
           setQuestion({
-            ...doc.data(),
-            id: doc.id
+            ...questionDoc.data(),
+            id: questionDoc.id
           });
-          console.log('Using first document as fallback');
+          
+          // Reset error if previously set
           setError('');
           setCanSubmit(true);
         } else {
-          setError('No questions available');
+          setError('Could not retrieve question details');
           setCanSubmit(false);
         }
+      } else {
+        setError('No questions available');
+        setCanSubmit(false);
       }
     } catch (error) {
       console.error('Error fetching question:', error);
       setError('Failed to load today\'s question: ' + error.message);
-      // Don't set canSubmit to false here, let checkDailySubmission handle that
     } finally {
       setIsLoading(false);
     }
@@ -92,10 +75,6 @@ const AnswerPrompt = () => {
   // Check daily submission
   const checkDailySubmission = useCallback(async () => {
     if (isLoading) return; // Skip if still loading
-    
-    //console.log("Running checkDailySubmission");
-    //console.log("Question:", question);
-    //console.log("Current user:", auth.currentUser);
     
     if (!question || !auth.currentUser) {
       console.log("Can't check submission: missing question or user");
